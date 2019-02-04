@@ -1,0 +1,8 @@
+*.Rproj
+.Rproj.user
+.Rhistory
+.Rdata
+.R*
+Figures
+scripts.R
+sim_devel.R

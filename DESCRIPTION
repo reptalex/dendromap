@@ -1,0 +1,25 @@
+Package: twotree
+Type: Package
+Title: twotree: R package for using time-scaled reference trees to scale microbial phylogenies.
+Version: 0.1.0
+Author: Alex Washburne
+Maintainer: Alex Washburne <alex.d.washburne@gmail.com>
+Description: Functions to ID and visualize correlated nodepaths across two trees
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Depends:
+  ape (>= 3.4),
+  R (>= 3.3),
+  ape (>= 5.2)
+Imports:
+  stats (>= 3.3.2),
+  graphics (>= 3.3.2),
+  grDevices (>= 3.3.2),
+  parallel (>= 3.2.2),
+  phangorn (>= 2.4.0),
+  ggtree (>= 1.14.6),
+  ggplot2 (>= 3.1.0),
+  cowplot (>= 0.9.4),
+  viridis (>= 0.5.1)
+RoxygenNote: 6.1.1
