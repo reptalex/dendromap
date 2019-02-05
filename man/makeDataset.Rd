@@ -4,8 +4,8 @@
 \alias{makeDataset}
 \title{make dataset from treemap object}
 \usage{
-makeDataset(Path, row.tree, col.tree, d = NULL, sd = 10,
-  baseline = 0, family = "bernoulli", ...)
+makeDataset(Path, row.tree = NULL, col.tree = NULL, d = NULL,
+  sd = 100, baseline = 0, family = "bernoulli")
 }
 \arguments{
 \item{Path}{output from \code{\link{treeMap}}}
