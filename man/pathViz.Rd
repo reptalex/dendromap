@@ -4,14 +4,16 @@
 \alias{pathViz}
 \title{Visualize a single, manifested path on two trees}
 \usage{
-pathViz(Path, col.tree, row.tree)
+pathViz(Path, row.tree, col.tree, ...)
 }
 \arguments{
 \item{Path}{output from \code{\link{treeMap}}}
 
+\item{row.tree}{\code{phylo} class object from \code{treeMap}}
+
 \item{col.tree}{\code{phylo} class object from \code{treeMap}}
 
-\item{row.tree}{\code{phylo} class object from \code{treeMap}}
+\item{...}{additional input args to plot and nodelabels}
 }
 \description{
 Visualize a single, manifested path on two trees
