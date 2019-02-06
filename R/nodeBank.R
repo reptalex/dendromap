@@ -9,7 +9,7 @@
 #' set.seed(1)
 #' library(ape)
 #' tree <- rtree(10)
-#' nb <- NodeBank(11,tree,0.5)
+#' nb <- nodeBank(11,tree,0.5)
 nodeBank <- function(node,tree,prob=1){
   nb <- data.table('node'=phangorn::Descendants(tree,node,'all'))
   nb <- nb[node %in% (ape::Ntip(tree)+1:tree$Nnode)]
