@@ -1,5 +1,6 @@
 #' Make basis from phylogenetic tree
 #' 
+#' @export
 #' @param tree \code{phylo} class object
 #' @output matrix whose rows are tip-labels and column vectors are basis elements corresponding to nodes in the tree
 #' @examples
@@ -23,8 +24,8 @@ treeBasis <- function(tree){
     v <- rep(0,k)
     r <- length(grp[[1]])
     s <- length(grp[[2]])
-    v[grp[[1]]] <- sqrt(s/r/(r+s))
-    v[grp[[2]]] <- -sqrt(r/s/(r+s))
+    v[grp[[1]]] <- sqrt(s/(r*(r+s)))
+    v[grp[[2]]] <- -sqrt(r/(s*(r+s)))
     return(v)
   }
   

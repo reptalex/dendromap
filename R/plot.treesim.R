@@ -33,7 +33,7 @@ plot.treesim <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   nodecols <- data.table('node'=sort(unique(S$Paths$col.node),decreasing = F),
                          'color'=vcols)
   gtr <- ggtree::ggtree(S$col.tree,branch.length = 'none')+
-    ggtree::geom_point2(aes(subset=node %in% nodecols$node),
+    ggtree::geom_point2(ggplot2::aes(subset=node %in% nodecols$node),
                         color=nodecols$color,cex=3)+
     ggplot2::coord_flip()+ggplot2::scale_x_reverse()+
     ggplot2::scale_y_reverse()
@@ -79,13 +79,13 @@ plot.treesim <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   Path <- S$Paths
   setkey(Path,row.node)
   gg.cols <- nodecols[match(S$Paths$col.node,node),]$color
-  gg <- gg+ggtree::geom_point2(aes(subset=node %in% Path$row.node),
+  gg <- gg+ggtree::geom_point2(ggplot2::aes(subset=node %in% Path$row.node),
                                color=gg.cols,cex=3)
   
   P <- as.data.frame(P)
   colnames(P) <- colnames(X)
   rownames(P) <- rownames(X)
-  gg <- gheatmap(gg,P,color=NA,colnames = FALSE,offset=heatmap.offset)+
+  gg <- ggtree::gheatmap(gg,P,color=NA,colnames = FALSE,offset=heatmap.offset)+
     theme(legend.position = 'none')+cowplot::theme_nothing()
   
   output <- cowplot::ggdraw() + 

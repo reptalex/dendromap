@@ -46,7 +46,7 @@ basalMaxima <- function(X,row.tree,col.tree=NULL,W=NULL,V=NULL,threshold=5,ncore
   } else {
     cl <- parallel::makeCluster(ncores)
     getMax <- function(ix,tr,threshold){return(basalMax(U[,ix,drop=F],tr,threshold))}
-    parallel::clusterExport(cl,varlist=c('basalMax','U','getMax'))
+    parallel::clusterExport(cl,varlist=c('basalMax','U','getMax'),envir = environment())
     parallel::clusterEvalQ(cl,expr=library(data.table))
     Maxima <- NULL
     Maxima <- tryCatch(parallel::parLapply(cl,colnames(U),getMax,row.tree,threshold),

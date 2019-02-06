@@ -3,7 +3,7 @@
 #' @export
 #' @param node node in tree
 #' @param tree \code{phylo} class object
-#' @param prob probability between 0 and 1 ##What does this correspond to, and how is it calculated?##
+#' @param prob probability between 0 and 1
 #' @output data frame with columns "node", "manifest" and "terminal"
 #' @examples
 #' set.seed(1)

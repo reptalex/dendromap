@@ -9,10 +9,10 @@
 #' tree <- rtree(10)
 #' nb <- nodeBank(11,tree,0.8)
 #' manifestChildren(11,tree,nb)
-manifestChildren <- function(node,tree,nodebank){
-  m <- nodebank[node==node & manifest==T,node]
+manifestChildren <- function(nd,tree,nodebank){
+  m <- nodebank[node==nd & manifest==T,node]
   if (length(m)==0){
-    ch <- phangorn::Descendants(tree,node,'children')
+    ch <- phangorn::Descendants(tree,nd,'children')
     while(length(ch)>0){
       m <- c(m,nodebank[node %in% ch & manifest==T,node])
       ch <- nodebank[node %in% ch & manifest==F,node]

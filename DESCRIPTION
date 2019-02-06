@@ -11,7 +11,9 @@ LazyData: true
 Depends:
   ape (>= 3.4),
   R (>= 3.3),
-  ape (>= 5.2)
+  ape (>= 5.2),
+  data.table (>= 1.12.0),
+  magrittr(>= 1.5.0)
 Imports:
   stats (>= 3.3.2),
   graphics (>= 3.3.2),
