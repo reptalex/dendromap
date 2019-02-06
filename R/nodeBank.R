@@ -4,7 +4,6 @@
 #' @param node node in tree
 #' @param tree \code{phylo} class object
 #' @param prob probability between 0 and 1
-#' @output data frame with columns "node", "manifest" and "terminal"
 #' @examples
 #' set.seed(1)
 #' library(ape)

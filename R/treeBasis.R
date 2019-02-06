@@ -2,7 +2,6 @@
 #' 
 #' @export
 #' @param tree \code{phylo} class object
-#' @output matrix whose rows are tip-labels and column vectors are basis elements corresponding to nodes in the tree
 #' @examples
 #' library(ape)
 #' tree <- rtree(5)

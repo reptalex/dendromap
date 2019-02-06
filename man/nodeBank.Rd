@@ -20,5 +20,5 @@ Make a dataset of nodes in a tree and whether/not they are manifested
 set.seed(1)
 library(ape)
 tree <- rtree(10)
-nb <- NodeBank(11,tree,0.5)
+nb <- nodeBank(11,tree,0.5)
 }

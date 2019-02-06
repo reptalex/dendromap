@@ -9,12 +9,12 @@
 #' @param ncores Number of cores for parallel computation of \code{basalMax}
 #' @examples 
 #' set.seed(3)
-#' m=1e3
-#' n=30
+#' m=1e2
+#' n=5
 #' row.tree <- rtree(m) %>% phytools::force.ultrametric()
 #' col.tree <- rtree(n)
 #' 
-#' S <- treeSim(10,row.tree,col.tree,prob.row=0.7,prob.col=0.8,
+#' S <- treeSim(10,row.tree,col.tree,prob.row=0.8,prob.col=0.8,
 #'              col.node = n+1,fix.col.node = T,sd = 1e3,
 #'              row.depth.min=2,row.depth.max=3)
 #' 
@@ -23,10 +23,28 @@
 #' Maxima[,orientation:=sign(value)]
 #' 
 #' ### code copied from pathViz
-#' colmap <- viridis::viridis(nrow(Maxima))
-#' par(mfrow=c(1,1))
-#' plot(row.tree,main='Row tree')
-#' nodelabels(text=rep(' ',nrow(Maxima)),node=Maxima$row.node,bg = colmap,frame = 'circle')
+#' colmap <- data.table('color'=viridis::viridis(length(unique(Maxima$col.node))),
+#'                      'node'=unique(Maxima$col.node))
+#' 
+#' par(mfrow=c(1,3))
+#' plot(row.tree,main='Row tree, raw Gaussian')
+#' nodelabels(text=rep(' ',nrow(Maxima)),node=Maxima$row.node,cex=2,
+#'            bg = colmap[match(Maxima$col.node,node),color],frame = 'circle')
+#' nodelabels(text=rep('.',nrow(S$Paths)),node=S$Paths$row.node,bg='red',frame='circle',cex=.5)
+#' 
+#' probs <- binomial(link='logit')$linkinv(X)
+#' probs[X==0] <- 0.1
+#' P <- rbinom(m*n,1,c(probs)) %>% matrix(nrow=m,byrow=F)
+#' MaximaP <- basalMaxima(P,row.tree,col.tree,threshold=1.5)
+#' plot(row.tree,main='Row tree, Bernoulli data, threshold=1.5')
+#' nodelabels(text=rep(' ',nrow(MaximaP)),node=MaximaP$row.node,cex=2,
+#'            bg = colmap[match(MaximaP$col.node,node),color],frame = 'circle')
+#' nodelabels(text=rep('.',nrow(S$Paths)),node=S$Paths$row.node,bg='red',frame='circle',cex=.5)
+#' 
+#' MaximaP2 <- basalMaxima(P,row.tree,col.tree,threshold=0.1)
+#' plot(row.tree,main='Row tree, Bernoulli data, threshold=0.1')
+#' nodelabels(text=rep(' ',nrow(MaximaP2)),node=MaximaP2$row.node,cex=2,
+#'            bg = colmap[match(MaximaP2$col.node,node),color],frame = 'circle')
 #' nodelabels(text=rep('.',nrow(S$Paths)),node=S$Paths$row.node,bg='red',frame='circle',cex=.5)
 
 basalMaxima <- function(X,row.tree,col.tree=NULL,W=NULL,V=NULL,threshold=5,ncores=NULL){

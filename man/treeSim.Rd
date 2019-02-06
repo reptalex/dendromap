@@ -58,6 +58,8 @@ col.tree <- rtree(n)
 S <- treeSim(10,row.tree,col.tree,prob.row=0.7,prob.col=0.8,
              col.node = n+1,fix.col.node = T,sd = 1e3,
              row.depth.min=2,row.depth.max=3)
+S <- treeSim(10,row.tree,col.tree,prob.row=0.7,prob.col=0.8,sd = 1e3,
+             row.depth.min=2,row.depth.max=3)              
 
 plot(S,col.tr.left = 0.47,
      col.tr.width = 0.505,

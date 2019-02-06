@@ -4,14 +4,14 @@
 \alias{manifestChildren}
 \title{Find all manifested descendants of a node}
 \usage{
-manifestChildren(node, tree, nodebank)
+manifestChildren(nd, tree, nodebank)
 }
 \arguments{
-\item{node}{node in \code{tree}}
-
 \item{tree}{\code{phylo} class object}
 
 \item{nodebank}{output from \code{\link{nodeBank}}}
+
+\item{node}{node in \code{tree}}
 }
 \description{
 Find all manifested descendants of a node
