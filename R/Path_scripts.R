@@ -6,6 +6,9 @@
 ## The depths can be used to calculate Gillepsie propensities and manifest events based on these propensities
 ## The depths can also be used to calculate null distributions for paths of interest, to create confidence statstics that check for false positive patterns between the row and the column tree
 
+library(ape)
+library(phangorn)
+
 trimpaths <- function(Tree) {
   Nodepath <- nodepath(Tree, from=Ntip(tree)+1)
   trimedpath <- list(length=length(Nodepath))
