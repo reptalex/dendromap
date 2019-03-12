@@ -19,6 +19,7 @@ trimpaths <- function(Tree) {
   return(trimedpath)
 }
 
+#Here trimedpath stands for the output of trimpaths
 pathdepths <- function(trimedpath, tree) {
   Depths <- node.depth.edgelength(tree)
   for (j in 1:(length(trimedpath))) {
@@ -31,6 +32,7 @@ pathdepths <- function(trimedpath, tree) {
   return(trimedpath)
 }
 
+#Here again trimedpath stands for the output of trimpaths, not the output of pathdepths
 pathorient <- function(trimedpath, tree) {
   Desc <- Descendants(tree, (Ntip(tree)+1), type="all")
   desc <- vector(length = length(Desc))
