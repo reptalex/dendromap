@@ -9,10 +9,26 @@
 #' library(ape)
 #' tree <- rtree(10)
 #' nb <- nodeBank(11,tree,0.5)
-nodeBank <- function(node,tree,prob=1){
+nodeBank <- function(node,tree,prob=1,propensity=NULL){
   nb <- data.table('node'=phangorn::Descendants(tree,node,'all'))
   nb <- nb[node %in% (ape::Ntip(tree)+1:tree$Nnode)]
+  if (is.null(propensity)){
+    nb[,propensity:=-log(1-prob)]
+  } else {
+    nb[,propensity:=propensity]
+    prob <- 1-exp(-propensity)
+  }
   nb[,manifest:=sample(c(T,F),size=.N,replace = T,prob=c(prob,1-prob))]
-  nb[,terminal:=node %in% tree$edge[tree$edge[,2]<=ape::Ntip(tree),1]]
+  # tree$edge[tree$edge[,2]<=ape::Ntip(tree),1]
+  terminal.nodes <- table(tree$edge[tree$edge[,2]<=ape::Ntip(tree),1])
+  terminal.nodes <- as.numeric(names(which(terminal.nodes==2)))
+  nds <- data.table('node'=1:(ape::Ntip(tree)+ape::Nnode(tree)),
+                    'depth'=ape::node.depth.edgelength(tree))
+  nds <- nds[node %in% nb$node]
+  setkey(nds,node)
+  setkey(nb,node)
+  nb <- nb[nds]
+  nb[,terminal:=node %in% terminal.nodes]
+  
   return(nb)
 }

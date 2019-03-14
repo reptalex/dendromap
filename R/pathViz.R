@@ -10,13 +10,18 @@
 #' row.tree <- rtree(100)
 #' col.tree <- rtree(10)
 #' S <- treeMap(row.tree,col.tree,101,11,0.2,1)
-#' pathViz(S,col.tree,row.tree)
+#' pathViz(S,row.tree,col.tree)
 pathViz <- function(Path,row.tree,col.tree,...){
-  colmap <- viridis::viridis(nrow(Path))
+  
+  colmap <- data.table('col.node'=sort(unique(Path$col.node),decreasing = F),
+                       'col'=viridis::viridis(length(unique(Path$col.node))))
+  
   par(mfrow=c(1,2))
   plot(row.tree,main='Row tree',...)
-  nodelabels(Path$row.node,Path$row.node,bg = colmap,frame = 'circle',...)
+  nodelabels(Path$row.node,Path$row.node,
+             bg = colmap[match(Path$col.node,colmap$col.node),col],
+             frame = 'circle',...)
   
   plot(col.tree,main='Column tree',...)
-  nodelabels(Path$col.node,Path$col.node,bg = colmap,frame='circle',...)
+  nodelabels(colmap$col.node,colmap$col.node,bg = colmap$col,frame='circle',...)
 }
