@@ -4,7 +4,7 @@
 \alias{nodeBank}
 \title{Make a dataset of nodes in a tree and whether/not they are manifested}
 \usage{
-nodeBank(node, tree, prob = 1)
+nodeBank(node, tree, prob = 1, propensity = NULL)
 }
 \arguments{
 \item{node}{node in tree}

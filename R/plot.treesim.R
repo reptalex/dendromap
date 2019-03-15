@@ -86,7 +86,7 @@ plot.treesim <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   colnames(P) <- colnames(X)
   rownames(P) <- rownames(X)
   gg <- ggtree::gheatmap(gg,P,color=NA,colnames = FALSE,offset=heatmap.offset)+
-    theme(legend.position = 'none')+cowplot::theme_nothing()
+    ggtree::theme(legend.position = 'none')+cowplot::theme_nothing()
   
   output <- cowplot::ggdraw() + 
     cowplot::draw_plot(gtr, x = col.tr.left, y = col.tr.bottom,

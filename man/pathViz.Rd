@@ -24,5 +24,5 @@ library(ape)
 row.tree <- rtree(100)
 col.tree <- rtree(10)
 S <- treeMap(row.tree,col.tree,101,11,0.2,1)
-pathViz(S,col.tree,row.tree)
+pathViz(S,row.tree,col.tree)
 }

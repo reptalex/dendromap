@@ -17,22 +17,41 @@
 #' @param col.depth.min optional numeric minimum depth for nodes for random start of \code{treeMap}
 #' @param col.depth.max optional numeric maximum depth for nodes for random start of \code{treeMap}
 #' @param fix.col.node logical: whether or not to fix the column node for the start of every \code{treeMap}
+#' @param use.depth logical: whether or not to use propensities to limit manifestation in row tree to being after nodes in column tree. 
+#' @param col.nb \code{\link{nodeBank}} for column tree, allowing user to set up propensities of column tree nodes.
 #' @examples 
+#' library(ggplot2)
 #' set.seed(3)
 #' m=1e3
 #' n=30
 #' row.tree <- rtree(m) %>% phytools::force.ultrametric()
 #' col.tree <- rtree(n)
-#' 
-#' S <- treeSim(10,row.tree,col.tree,prob.row=0.7,prob.col=0.8,
-#'              col.node = n+1,fix.col.node = T,sd = 1e3,
-#'              row.depth.min=2,row.depth.max=3)
 #' S <- treeSim(10,row.tree,col.tree,prob.row=0.7,prob.col=0.8,sd = 1e3,
 #'              row.depth.min=2,row.depth.max=3)              
 #' 
 #' plot(S,col.tr.left = 0.47,
 #'      col.tr.width = 0.505,
 #'      col.tr.bottom = 0.74)
+#'  
+#' set.seed(1)
+#' S <- treeSim(30,row.tree,col.tree,prob.row=0.7,prob.col=0.8,sd = 1e3,use.depths=T) 
+#'              
+#' plot(S,col.tr.left = 0.47,
+#'      col.tr.width = 0.505,
+#'      col.tr.bottom = 0.74)   
+#'      
+#' row.depths <- data.table('row.depth'=node.depth.edgelength(row.tree))
+#' row.depths[,row.node:=1:.N]
+#' setkey(row.depths,row.node)
+#' col.depths <- data.table('col.depth'=node.depth.edgelength(col.tree))
+#' col.depths[,col.node:=1:.N]
+#' setkey(col.depths,col.node)
+#' setkey(S$Paths,row.node)
+#' Paths <- row.depths[S$Paths]
+#' setkey(Paths,col.node)
+#' Paths <- col.depths[Paths]
+#' 
+#' ggplot(Paths,aes(row.depth,col.depth))+geom_point()+geom_abline(intercept=0,slope=1)
 
 treeSim <- function(n,row.tree,col.tree,
                     prob.row=1,prob.col=1,sd=1,W=NULL,V=NULL,
@@ -40,7 +59,7 @@ treeSim <- function(n,row.tree,col.tree,
                     row.nodeset=NULL,col.nodeset=NULL,
                     row.depth.min=NULL,row.depth.max=NULL,
                     col.depth.min=NULL,col.depth.max=NULL,
-                    fix.col.node=FALSE){
+                    fix.col.node=FALSE,use.depths=F,col.nb=NULL){
   
   if (fix.col.node==TRUE & is.null(col.node)){
     col.node <- 1+ape::Ntip(col.tree)
@@ -87,7 +106,7 @@ treeSim <- function(n,row.tree,col.tree,
         col.node <- sample(col.nodeset,1)
       }
       
-      Path[[ii]] <- treeMap(row.tree,col.tree,row.node,col.node,prob.row,prob.col)
+      Path[[ii]] <- treeMap(row.tree,col.tree,row.node,col.node,prob.row,prob.col,col.nb,use.depths)
     } else {
       row.start <- Path[[ii-1]]$row.node[1]
       row.nodeset <- intersect(row.nodeset,disjointNodeset(row.start,row.tree))
@@ -97,7 +116,7 @@ treeSim <- function(n,row.tree,col.tree,
           col.node <- sample(col.nodeset,1)
         }
         row.node <- sample(row.nodeset,1)
-        Path[[ii]] <-  treeMap(row.tree,col.tree,row.node,col.node,prob.row,prob.col)
+        Path[[ii]] <-  treeMap(row.tree,col.tree,row.node,col.node,prob.row,prob.col,col.nb,use.depths)
       } else {
         Path <- Path[1:(ii-1)]
         break

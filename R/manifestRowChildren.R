@@ -1,3 +1,12 @@
+#' Manifest children for row tree, sensitive to depth of col.nodes
+#' 
+#' @export
+#' @param node row tree node whose children need to be found
+#' @param row.tree \code{phylo} class object
+#' @param row.nb \code{\link{nodeBank}} for \code{row.tree}
+#' @param col.nb \code{\link{nodeBank}} for \code{col.tree}
+#' @param col.nodes nodes from column tree
+#' @param use.depths logical - whether or not to use depth-based filtering through propensities in \code{col.nb}
 manifestRowChildren <- function(node,row.tree,row.nb,col.nb,col.nodes,use.depths=F){
   if (use.depths){
     colnds <- c(col.nodes,unlist(phangorn::Descendants(col.tree,col.nodes,'all')))

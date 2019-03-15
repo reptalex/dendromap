@@ -66,7 +66,7 @@ treeMap <- function(row.tree,col.tree,row.node=NULL,col.node=NULL,
   row.nb <- nodeBank(ape::Ntip(row.tree)+1,row.tree,prob.row)
   if (is.null(col.nb)){
     col.nb <- nodeBank(ape::Ntip(col.tree)+1,col.tree,prob.col)
-    col.nb[,propensity:=1]
+    col.nb[,propensity:=-log(1-prob.col)]
   } else {
     if (is.null(col.nb$propensity)){
       col.nb[,propensity:=1]

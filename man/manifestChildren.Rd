@@ -4,7 +4,7 @@
 \alias{manifestChildren}
 \title{Find all manifested descendants of a node}
 \usage{
-manifestChildren(nd, tree, nodebank)
+manifestChildren(nd, tree, nodebank, use.depths = F)
 }
 \arguments{
 \item{tree}{\code{phylo} class object}

@@ -5,7 +5,7 @@
 \title{Map events on column tree to nodes on row tree}
 \usage{
 treeMap(row.tree, col.tree, row.node = NULL, col.node = NULL,
-  prob.row = 1, prob.col = 1)
+  prob.row = 1, prob.col = 1, col.nb = NULL, use.depths = F)
 }
 \arguments{
 \item{row.tree}{\code{phylo} class object}
@@ -19,6 +19,8 @@ treeMap(row.tree, col.tree, row.node = NULL, col.node = NULL,
 \item{prob.row}{probability, between 0 and 1, that a descendant node is manifested in the tree map.}
 
 \item{prob.col}{same as \code{prob.row} but for nodes in column tree.}
+
+\item{col.nb}{optional \code{\link{nodeBank}} with defined propensities for column node manifestation}
 }
 \description{
 Map events on column tree to nodes on row tree
@@ -26,8 +28,47 @@ Map events on column tree to nodes on row tree
 \examples{
 set.seed(1)
 library(ape)
+library(twotree)
+library(ggplot2)
 row.tree <- rtree(100)
 col.tree <- rtree(10)
 S <- treeMap(row.tree,col.tree,101,11,0.2,1)
-pathViz(S,col.tree,row.tree)
+pathViz(S,row.tree,col.tree)
+
+S2 <- treeMap(row.tree,col.tree,101,11,0.2,1,use.depths=T)
+pathViz(S2,row.tree,col.tree)
+
+### We can also simulate a particular column node having a
+### higher propensity:
+col.nb <- nodeBank(11,col.tree,propensity=2)
+col.nb[node \%in\% c(13,17,18),propensity:=Inf]  ## high chance of these nodes
+
+S3 <- treeMap(row.tree,col.tree,row.node=101,col.node=11,prob.row=0.1,
+              col.nb=col.nb,use.depths=T)
+pathViz(S3,row.tree,col.tree)
+
+set.seed(1)
+library(ape)
+row.tree <- rtree(100)
+col.tree <- rtree(10)
+
+set.seed(1)
+library(ape)
+row.tree <- rtree(1000)
+col.tree <- rtree(300)
+
+S <- treeMap(row.tree,col.tree,row.node=1001,col.node=301,prob.row=0.1,
+              col.nb=nodeBank(301,col.tree,propensity=1),use.depths=T)
+row.depths <- data.table('row.depth'=node.depth.edgelength(row.tree))
+row.depths[,row.node:=1:.N]
+setkey(row.depths,row.node)
+col.depths <- data.table('col.depth'=node.depth.edgelength(col.tree))
+col.depths[,col.node:=1:.N]
+setkey(col.depths,col.node)
+setkey(S,row.node)
+S <- row.depths[S]
+setkey(S,col.node)
+S <- col.depths[S]
+
+ggplot(S,aes(row.depth,col.depth))+geom_point()+geom_abline(intercept=0,slope=1)
 }
