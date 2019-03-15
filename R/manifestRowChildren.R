@@ -13,7 +13,7 @@ manifestRowChildren <- function(node,row.tree,row.nb,col.nb,col.nodes,use.depths
       } else {
         snb <- row.nb
         snb[,manifest:=FALSE]
-        snb[node %in% nb$node,manifest:=TRUE]
+        snb[node %in% NB$node,manifest:=TRUE]
         m <- manifestChildren(node,row.tree,snb)
       }
       MAP <- NULL
