@@ -36,11 +36,11 @@
 #' 
 #' set.seed(1)
 #' library(ape)
-#' row.tree <- rtree(100)
-#' col.tree <- rtree(30)
+#' row.tree <- rtree(1000)
+#' col.tree <- rtree(300)
 #' 
-#' S <- treeMap(row.tree,col.tree,row.node=101,col.node=31,prob.row=0.1,
-#'               col.nb=nodeBank(31,col.tree,propensity=1),use.depths=T)
+#' S <- treeMap(row.tree,col.tree,row.node=1001,col.node=301,prob.row=0.1,
+#'               col.nb=nodeBank(301,col.tree,propensity=1),use.depths=T)
 #' row.depths <- data.table('row.depth'=node.depth.edgelength(row.tree))
 #' row.depths[,row.node:=1:.N]
 #' setkey(row.depths,row.node)
@@ -53,8 +53,6 @@
 #' S <- col.depths[S]
 #' 
 #' ggplot(S,aes(row.depth,col.depth))+geom_point()+geom_abline(intercept=0,slope=1)
-
-
 treeMap <- function(row.tree,col.tree,row.node=NULL,col.node=NULL,
                     prob.row=1,prob.col=1,col.nb=NULL,use.depths=F){
   if (is.null(row.node)){
