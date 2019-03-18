@@ -1,6 +1,6 @@
-Package: twotree
+Package: dendromap
 Type: Package
-Title: twotree: R package for using time-scaled reference trees to scale microbial phylogenies.
+Title: dendromap: R package for using time-scaled reference trees to scale microbial phylogenies.
 Version: 0.1.0
 Author: Alex Washburne
 Maintainer: Alex Washburne <alex.d.washburne@gmail.com>
