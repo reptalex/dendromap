@@ -60,6 +60,8 @@ pathorient <- function(trimedpath, tree) {
   return(trimedpath)
 }
 
+
+##This is the function that changes the edge lengths downstream a node of interest according to a given factor##
 warp_tree <- function(Tree, Factor, node) {
   desc_list <- Descendants(Tree, node=node, type="all")
   desc_list <- c(node, desc_list)
@@ -75,6 +77,7 @@ warp_tree <- function(Tree, Factor, node) {
    return(tree_temp)
 }
 
+##This is the wrapper of the warp function above, for a data.frame with column names c("Nodes","Factors")
 warp_tree_multi <- function(Tree, data_frame) {
   temp_tree <- Tree
   for (i in 1:length(data_frame$Nodes)) {
