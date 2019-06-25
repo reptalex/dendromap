@@ -5,7 +5,8 @@
 \title{Map events on column tree to nodes on row tree}
 \usage{
 treeMap(row.tree, col.tree, row.node = NULL, col.node = NULL,
-  prob.row = 1, prob.col = 1, col.nb = NULL, use.depths = F)
+  prob.row = 1, prob.col = 1, decay.rate = 0, col.nb = NULL,
+  use.depths = F)
 }
 \arguments{
 \item{row.tree}{\code{phylo} class object}
@@ -20,7 +21,11 @@ treeMap(row.tree, col.tree, row.node = NULL, col.node = NULL,
 
 \item{prob.col}{same as \code{prob.row} but for nodes in column tree.}
 
+\item{decay.rate}{exponential rate of decay for past nodes. Probability of draw will be exp(-decay.rate*dT) where dT is the time from column node to row node. Only implemented if \code{use.depths=TRUE}}
+
 \item{col.nb}{optional \code{\link{nodeBank}} with defined propensities for column node manifestation}
+
+\item{use.depths}{logical - whether or not to limit row nodes to those after (deeper than) the depths of paired column nodes.}
 }
 \description{
 Map events on column tree to nodes on row tree
@@ -58,7 +63,7 @@ row.tree <- rtree(1000)
 col.tree <- rtree(300)
 
 S <- treeMap(row.tree,col.tree,row.node=1001,col.node=301,prob.row=0.1,
-              col.nb=nodeBank(301,col.tree,propensity=1),use.depths=T)
+              col.nb=nodeBank(301,col.tree,propensity=1),use.depths=T,decay.rate=10)
 row.depths <- data.table('row.depth'=node.depth.edgelength(row.tree))
 row.depths[,row.node:=1:.N]
 setkey(row.depths,row.node)

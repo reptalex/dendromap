@@ -5,7 +5,8 @@
 #' @param col.tree \code{phylo} class object
 #' @param W appropriately named \code{\link{treeBasis}} for \code{row.tree} or subset of that basis. 
 #' @param V appropriately named \code{\link{treeBasis}} for \code{col.tree} or subset of that basis. 
-#' @param threshold absolute value below which nodes and nodepaths are dropped from consideration. Default is 0
+#' @param threshold absolute value below which nodes and nodepaths are dropped from consideration. Default is \code{4*sd(log(U^2))}
+#' @param min.val minimum value for \eqn{log(U^2)}, where \eqn{U=W'XV}. All values below \code{min.val} will be set to 0
 #' @param ncores Number of cores for parallel computation of \code{basalMax}
 #' @examples 
 #' set.seed(3)
@@ -47,7 +48,7 @@
 #'            bg = colmap[match(MaximaP2$col.node,node),color],frame = 'circle')
 #' nodelabels(text=rep('.',nrow(S$Paths)),node=S$Paths$row.node,bg='red',frame='circle',cex=.5)
 
-basalMaxima <- function(X,row.tree,col.tree=NULL,W=NULL,V=NULL,threshold=5,ncores=NULL){
+basalMaxima <- function(X,row.tree,col.tree=NULL,W=NULL,V=NULL,threshold=NULL,min.val=-10,ncores=NULL){
   if (is.null(col.tree) & is.null(V)){
     stop('Must input either col.tree or V')
   }
@@ -59,9 +60,20 @@ basalMaxima <- function(X,row.tree,col.tree=NULL,W=NULL,V=NULL,threshold=5,ncore
   }
   
   U <- t(W) %*% X %*% V
+  U <- log(U^2)
+  U[U<min.val] <- 0
+  if (is.null(threshold)){
+    threshold <- mean(U[U>0])+3*sd(U[U>0])
+  }
+
   if (is.null(ncores)){
-    Maxima <- apply(U,2,basalMax,row.tree=S$row.tree,threshold=threshold)
+    Maxima <- apply(U,2,basalMax,row.tree=row.tree,threshold=threshold)
   } else {
+    ## Debug
+    # getMax <- function(ix,tr,threshold){return(basalMax(U[,ix,drop=F],tr,threshold))}
+    # for (ix in colnames(U)){
+    #   getMax(ix,row.tree,threshold)
+    # }
     cl <- parallel::makeCluster(ncores)
     getMax <- function(ix,tr,threshold){return(basalMax(U[,ix,drop=F],tr,threshold))}
     parallel::clusterExport(cl,varlist=c('basalMax','U','getMax'),envir = environment())

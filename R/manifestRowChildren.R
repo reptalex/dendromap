@@ -6,8 +6,9 @@
 #' @param row.nb \code{\link{nodeBank}} for \code{row.tree}
 #' @param col.nb \code{\link{nodeBank}} for \code{col.tree}
 #' @param col.nodes nodes from column tree
+#' @param decay.rate exponential rate of decay for past nodes. Probability of draw will be exp(-decay.rate*dT) where dT is the time from column node to row node. Only implemented if \code{use.depths=TRUE}
 #' @param use.depths logical - whether or not to use depth-based filtering through propensities in \code{col.nb}
-manifestRowChildren <- function(node,row.tree,row.nb,col.nb,col.nodes,use.depths=F){
+manifestRowChildren <- function(node,row.tree,row.nb,col.nb,col.nodes,decay.rate=0,use.depths=F){
   if (use.depths){
     colnds <- c(col.nodes,unlist(phangorn::Descendants(col.tree,col.nodes,'all')))
     colnds <- colnds[colnds>ape::Ntip(col.tree)]
@@ -28,7 +29,7 @@ manifestRowChildren <- function(node,row.tree,row.nb,col.nb,col.nodes,use.depths
       MAP <- NULL
       while (length(m)>0){
         
-        map <- depthDraw(NB[match(m,node),depth],col.depths$depth,col.depths$propensity)
+        map <- depthDraw(NB[match(m,node),depth],col.depths$depth,col.depths$propensity,decay.rate)
         map[,row.node:=m[row]]
         m <- map[col==0,row.node]
         map <- map[col>0]

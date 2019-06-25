@@ -4,7 +4,7 @@
 \alias{depthDraw}
 \title{draw node pairs for treeMap}
 \usage{
-depthDraw(d1, d2, lambda)
+depthDraw(d1, d2, lambda, decay.rate = 0)
 }
 \arguments{
 \item{d1}{depths on row tree}
@@ -12,6 +12,8 @@ depthDraw(d1, d2, lambda)
 \item{d2}{depths on col tree}
 
 \item{lambda}{propensities of column tree nodes}
+
+\item{decay.rate}{exponential rate of decay for past nodes. Probability of draw will be exp(-decay.rate*dT) where dT is the time from column node to row node.}
 }
 \description{
 draw node pairs for treeMap

@@ -8,7 +8,8 @@ treeSim(n, row.tree, col.tree, prob.row = 1, prob.col = 1, sd = 1,
   W = NULL, V = NULL, row.node = NULL, col.node = NULL,
   row.nodeset = NULL, col.nodeset = NULL, row.depth.min = NULL,
   row.depth.max = NULL, col.depth.min = NULL, col.depth.max = NULL,
-  fix.col.node = FALSE, use.depths = F, col.nb = NULL)
+  fix.col.node = FALSE, decay.rate = 0, use.depths = F,
+  col.nb = NULL, row.nb = NULL)
 }
 \arguments{
 \item{n}{max number of independent lineages on \code{row.tree} to map to column tree}
@@ -45,6 +46,8 @@ treeSim(n, row.tree, col.tree, prob.row = 1, prob.col = 1, sd = 1,
 
 \item{fix.col.node}{logical: whether or not to fix the column node for the start of every \code{treeMap}}
 
+\item{decay.rate}{exponential rate of decay for past nodes. Probability of draw will be exp(-decay.rate*dT) where dT is the time from column node to row node. Only implemented if \code{use.depths=TRUE}}
+
 \item{col.nb}{\code{\link{nodeBank}} for column tree, allowing user to set up propensities of column tree nodes.}
 
 \item{use.depth}{logical: whether or not to use propensities to limit manifestation in row tree to being after nodes in column tree.}
@@ -54,6 +57,7 @@ Simulate multiple treeMaps on row.tree
 }
 \examples{
 library(ggplot2)
+library(ggpubr)
 set.seed(3)
 m=1e3
 n=30
@@ -67,11 +71,14 @@ plot(S,col.tr.left = 0.47,
      col.tr.bottom = 0.74)
  
 set.seed(1)
-S <- treeSim(30,row.tree,col.tree,prob.row=0.7,prob.col=0.8,sd = 1e3,use.depths=T) 
+col.nb <- nodeBank(node=n+1,col.tree,propensity=50,include.node=T)
+col.nb[,propensity:=50*(max(depth)-depth)]  ##root nodes have higher propensities
+S <- treeSim(50,row.tree,col.tree,prob.row=0.7,prob.col=0.8,sd = 1e3,
+             col.nb=col.nb,decay.rate=20,use.depths=T) 
              
-plot(S,col.tr.left = 0.47,
-     col.tr.width = 0.505,
-     col.tr.bottom = 0.74)   
+dendroPlot <- plot(S,col.tr.left = 0.47,
+                   col.tr.width = 0.505,
+                   col.tr.bottom = 0.74)   
      
 row.depths <- data.table('row.depth'=node.depth.edgelength(row.tree))
 row.depths[,row.node:=1:.N]
@@ -83,6 +90,14 @@ setkey(S$Paths,row.node)
 Paths <- row.depths[S$Paths]
 setkey(Paths,col.node)
 Paths <- col.depths[Paths]
+Paths[,Lineage:=factor(sim)]
 
-ggplot(Paths,aes(row.depth,col.depth))+geom_point()+geom_abline(intercept=0,slope=1)
+depthPlot=ggplot(Paths,aes(row.depth,col.depth,color=Lineage))+
+                 geom_point()+
+                 geom_abline(intercept=0,slope=1)+
+                 geom_smooth(method='glm',se=F)+
+                 scale_x_continuous('Time on Microbial Tree')+
+                 scale_y_continuous('Time on Reference Tree')
+          
+ggarrange(dendroPlot,depthPlot)
 }

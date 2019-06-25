@@ -7,8 +7,6 @@
 #' tree <- rtree(5)
 #' treeBasis(tree)
 treeBasis <- function(tree){
-  k <- ape::Ntip(tree)
-  nd <- ape::Nnode(tree)
   getDesc <- function(nd,tr){
     children <- phangorn::Descendants(tr,nd,'children')
     desc <- lapply(children,
@@ -17,8 +15,6 @@ treeBasis <- function(tree){
     names(desc) <- paste('node',children,sep='_')
     return(desc)
   }
-  Grps <- lapply((k+1):(k+nd),getDesc,tr=tree)
-  
   basisVec <- function(grp,k){
     v <- rep(0,k)
     r <- length(grp[[1]])
@@ -28,8 +24,31 @@ treeBasis <- function(tree){
     return(v)
   }
   
+  #### find polytomies
+  tbl <- table(tree$edge[,1])
+  if (tree$Nnode<(length(tree$tip.label)-1)){
+    ## polytomies - we omit these nodes as we can't form a phILR basis for them
+    polytomies <- as.numeric(names(tbl[tbl>2]))
+  } else {
+    polytomies <- NULL
+  }
+  #### find irrelevant nodes
+  irrelevant.nodes <- as.numeric(names(tbl[tbl==1]))
+  
+  #### Obtain set of viable nodes
+  k <- ape::Ntip(tree)
+  nd <- ape::Nnode(tree)
+  nodes <- setdiff(setdiff((k+1):(k+nd),polytomies),irrelevant.nodes)
+  if (length(nodes)==0){
+    stop('All nodes have either one descendant or more than two descendants')
+  }
+  
+  #### Extract Groups
+  Grps <- lapply(nodes,getDesc,tr=tree)
+  
+  #### make basis
   V <- sapply(Grps,basisVec,k=k)
-  colnames(V) <- paste('node',(k+1):(k+nd),sep='_')
+  colnames(V) <- paste('node',nodes,sep='_')
   rownames(V) <- tree$tip.label
   return(V)
 }

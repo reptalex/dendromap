@@ -23,11 +23,16 @@
 
 \item{col.tr.width}{Width of column tree. Default is 0.45}
 
-\item{col.tr.bottom}{Bottom of column tree. Deafult is 0.75
+\item{col.tr.bottom}{Bottom of column tree. Deafult is 0.75}
+}
+\description{
+Plot treesim object
+}
+\examples{
 set.seed(3)
 m=1e3
-n=30
-row.tree <- rtree(m) %>% phytools::force.ultrametric()
+n=7
+row.tree <- rtree(m) \%>\% phytools::force.ultrametric()
 col.tree <- rtree(n)
 
 S <- treeSim(10,row.tree,col.tree,prob.row=0.7,prob.col=0.8,
@@ -36,8 +41,5 @@ S <- treeSim(10,row.tree,col.tree,prob.row=0.7,prob.col=0.8,
 
 plot(S,col.tr.left = 0.47,
      col.tr.width = 0.505,
-     col.tr.bottom = 0.74)}
-}
-\description{
-Plot treesim object
+     col.tr.bottom = 0.74)
 }

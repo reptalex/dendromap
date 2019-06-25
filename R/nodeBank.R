@@ -9,8 +9,11 @@
 #' library(ape)
 #' tree <- rtree(10)
 #' nb <- nodeBank(11,tree,0.5)
-nodeBank <- function(node,tree,prob=1,propensity=NULL){
+nodeBank <- function(node,tree,prob=1,propensity=NULL,include.node=FALSE){
   nb <- data.table('node'=phangorn::Descendants(tree,node,'all'))
+  if (include.node){
+    nb <- rbind(data.table('node'=node),nb)
+  }
   nb <- nb[node %in% (ape::Ntip(tree)+1:tree$Nnode)]
   if (is.null(propensity)){
     nb[,propensity:=-log(1-prob)]

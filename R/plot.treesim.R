@@ -8,9 +8,10 @@
 #' @param col.tr.left Left side boundary of column tree. Default is 0.5
 #' @param col.tr.width Width of column tree. Default is 0.45
 #' @param col.tr.bottom Bottom of column tree. Deafult is 0.75
+#' @examples
 #' set.seed(3)
 #' m=1e3
-#' n=30
+#' n=7
 #' row.tree <- rtree(m) %>% phytools::force.ultrametric()
 #' col.tree <- rtree(n)
 #' 
@@ -50,6 +51,7 @@ plot.treesim <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
       matrix(nrow=nrow(X),byrow=F)
     rownames(P) <- rownames(X)
   } else {
+    X <- y
     if (!all(S$col.tree$tip.label %in% colnames(y))){
       stop('colnames of y must have all col.tree tip-labels')
     } else if (!all(S$row.tree$tip.label %in% rownames(y))){

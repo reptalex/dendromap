@@ -6,7 +6,9 @@
 #' @param col.node integer. optional node for starting treeMap. Must be a node in \code{col.tree}
 #' @param prob.row probability, between 0 and 1, that a descendant node is manifested in the tree map.
 #' @param prob.col same as \code{prob.row} but for nodes in column tree.
+#' @param decay.rate exponential rate of decay for past nodes. Probability of draw will be exp(-decay.rate*dT) where dT is the time from column node to row node. Only implemented if \code{use.depths=TRUE}
 #' @param col.nb optional \code{\link{nodeBank}} with defined propensities for column node manifestation
+#' @param use.depths logical - whether or not to limit row nodes to those after (deeper than) the depths of paired column nodes. 
 #' @examples
 #' set.seed(1)
 #' library(ape)
@@ -40,7 +42,7 @@
 #' col.tree <- rtree(300)
 #' 
 #' S <- treeMap(row.tree,col.tree,row.node=1001,col.node=301,prob.row=0.1,
-#'               col.nb=nodeBank(301,col.tree,propensity=1),use.depths=T)
+#'               col.nb=nodeBank(301,col.tree,propensity=1),use.depths=T,decay.rate=10)
 #' row.depths <- data.table('row.depth'=node.depth.edgelength(row.tree))
 #' row.depths[,row.node:=1:.N]
 #' setkey(row.depths,row.node)
@@ -54,7 +56,7 @@
 #' 
 #' ggplot(S,aes(row.depth,col.depth))+geom_point()+geom_abline(intercept=0,slope=1)
 treeMap <- function(row.tree,col.tree,row.node=NULL,col.node=NULL,
-                    prob.row=1,prob.col=1,col.nb=NULL,use.depths=F){
+                    prob.row=1,prob.col=1,decay.rate=0,col.nb=NULL,use.depths=F){
   if (is.null(row.node)){
     row.node <- ape::Ntip(row.tree)+1
   }
@@ -89,16 +91,16 @@ treeMap <- function(row.tree,col.tree,row.node=NULL,col.node=NULL,
       
       if (length(colA)>0){
         if (orientation>0){
-          Path <- rbind(Path,manifestRowChildren(ch.row['a'],row.tree,row.nb,col.nb,colA,use.depths))
+          Path <- rbind(Path,manifestRowChildren(ch.row['a'],row.tree,row.nb,col.nb,colA,decay.rate,use.depths))
         } else {
-          Path <- rbind(Path,manifestRowChildren(ch.row['b'],row.tree,row.nb,col.nb,colA,use.depths))
+          Path <- rbind(Path,manifestRowChildren(ch.row['b'],row.tree,row.nb,col.nb,colA,decay.rate,use.depths))
         }
       }
       if (length(colB)>0){
         if (orientation>0){
-          Path <- rbind(Path,manifestRowChildren(ch.row['b'],row.tree,row.nb,col.nb,colB,use.depths))
+          Path <- rbind(Path,manifestRowChildren(ch.row['b'],row.tree,row.nb,col.nb,colB,decay.rate,use.depths))
         } else {
-          Path <- rbind(Path,manifestRowChildren(ch.row['a'],row.tree,row.nb,col.nb,colB,use.depths))
+          Path <- rbind(Path,manifestRowChildren(ch.row['a'],row.tree,row.nb,col.nb,colB,decay.rate,use.depths))
         }
       }
       Path$terminated[ix] <- TRUE

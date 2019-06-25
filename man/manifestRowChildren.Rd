@@ -5,7 +5,7 @@
 \title{Manifest children for row tree, sensitive to depth of col.nodes}
 \usage{
 manifestRowChildren(node, row.tree, row.nb, col.nb, col.nodes,
-  use.depths = F)
+  decay.rate = 0, use.depths = F)
 }
 \arguments{
 \item{node}{row tree node whose children need to be found}
@@ -17,6 +17,8 @@ manifestRowChildren(node, row.tree, row.nb, col.nb, col.nodes,
 \item{col.nb}{\code{\link{nodeBank}} for \code{col.tree}}
 
 \item{col.nodes}{nodes from column tree}
+
+\item{decay.rate}{exponential rate of decay for past nodes. Probability of draw will be exp(-decay.rate*dT) where dT is the time from column node to row node. Only implemented if \code{use.depths=TRUE}}
 
 \item{use.depths}{logical - whether or not to use depth-based filtering through propensities in \code{col.nb}}
 }

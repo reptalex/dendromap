@@ -31,10 +31,18 @@ basalMax <- function(u,row.tree,threshold=0){
   n <- ape::Ntip(row.tree)
   makename <- function(nd) paste('node',nd,sep='_')
   nds <- n+1:row.tree$Nnode
-  if (is.null(names(u))){
+
+  if (is.null(names(u)) & is.null(rownames(u))){
     names(u) <- makename(nds)
+  } else {
+    if (!is.null(names(u))){
+      nms <- names(u)
+    } else {
+      nms <- rownames(u)
+      u <- c(u)
+      names(u) <- nms
+    }
   }
-  nms <- names(u)
   
   f <- function(nm) sapply(nm,FUN=function(nm) as.numeric(strsplit(nm,'_')[[1]][2]))
   Maxima <- data.table('row.node'=numeric(round(n/2)),
@@ -57,7 +65,7 @@ basalMax <- function(u,row.tree,threshold=0){
       u <- NULL
     }
   }
-  Maxima <- Maxima[row.node!=0]
-  Maxima <- Maxima[abs(value)>=threshold]
+  Maxima <- Maxima[Maxima$row.node!=0,]
+  Maxima <- Maxima[abs(Maxima$value)>=threshold,]
   return(Maxima)
 }
