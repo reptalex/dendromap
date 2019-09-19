@@ -100,9 +100,13 @@ U <- t(W) %*% N %*% V
 
 
 ### make table for row-col node pairs
-makeRCtable <- function(N,row.tree,col.tree,n_sim=NULL){
-  W <- treeBasis(row.tree)
-  V <- treeBasis(col.tree)
+makeRCtable <- function(N,row.tree,col.tree,W=NULL,V=NULL,n_sim=NULL){
+  if (is.null(W)){
+    W <- treeBasis(row.tree)
+  }
+  if (is.null(V)){
+    V <- treeBasis(col.tree)
+  }
   U <- t(W) %*% N %*% V
   row.nodes <- sapply(rownames(U),strsplit,'_') %>% sapply(getElement,2) %>% as.numeric
   col.nodes <- sapply(colnames(U),strsplit,'_') %>% sapply(getElement,2) %>% as.numeric
@@ -110,7 +114,6 @@ makeRCtable <- function(N,row.tree,col.tree,n_sim=NULL){
   rc_table <- data.table(expand.grid('row.node'=row.nodes,
                                      'col.node'=col.nodes),
                          'stat'=c(U))
-  rm('U')
   gc()
   if (is.null(n_sim)){
     n_sim <- ceiling(10000/(nrow(N)*ncol(N)))
@@ -124,6 +127,8 @@ makeRCtable <- function(N,row.tree,col.tree,n_sim=NULL){
   }
   rc_table[,rc_index:=1:.N]
   setkey(rc_table,row.node,col.node)
+  rm(list=c('U','W','V'))
+  gc()
   return(rc_table)
 }
 
@@ -364,7 +369,24 @@ winner <- which.max(scores)
 output_table <- rc_table[rc_index %in% Lineages[[winner]]]
 answer
 output_table
+output_table[,Lineage:=1]
 
 
 ### now for each of these seqs, we get the rc indexes
 
+### We now need to take the basal-most row.node and 
+### remove it and all its descendants from all Lineages
+
+filterWinnerFromLineages <- function(winner,Lineages,
+                                     rc_table,row.nodemap){
+  basal_rc <- min(Lineages[[winner]])
+  row.node <- rc_table[rc_index==basal_rc,row.node]
+  Desc <- row.node:(row.nodemap[node==row.node,row.node+pos+neg])
+  filtered_rc_ix <- rc_table[row.node %in% Desc,rc_index]
+  
+  Lineages <- sapply(Lineages,FUN=function(a,b) setdiff(a,b),b=filtered_rc_ix)
+  Lineages <- Lineages[sapply(Lineages,FUN=function(x) length(x)>0)]
+  return(Lineages)
+}
+
+Lineages <- filterWinnerFromLineages(winner)

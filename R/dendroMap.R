@@ -1,5 +1,34 @@
+#' dendromap - find cophylogenetic patterns in a dataset
+#' @export
+#' @param X matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}
+#' @param row.tree phylo class object. Polytomies will be ignored.
+#' @param col.tree phylo class object. Polytomies will be ignored.
+#' @param Pval_threshold Threshold "significance" of a row-column node pair for consideration in lineages
+#' @examples
+#' library(dendromap)
+#' set.seed(1)
+#' m=1000
+#' n=10
+#' row.tree <- rtree(m)
+#' col.tree <- rtree(n)
+#' S <- treeSim(5,row.tree,col.tree,col.node=n+1)
+#' eta <- S$W %*% (10*S$D) %*% t(S$V)
+#' X <- eta+matrix(rnorm(m*n),nrow=m)
+#' clrinv <- function(x) exp(x)/sum(exp(x))
+#' rmlt <- function(p,lambda=5e3) rmultinom(1,rpois(1,lambda),prob = p)
+#' N <- apply(X,2,clrinv) %>% apply(2,rmlt)
+#' rownames(N) <- row.tree$tip.label
+#' colnames(N) <- col.tree$tip.label
+#' dm <- dendromap(N,row.tree,col.tree) 
+#' 
+#' plot.treesim(S)
+#' plot.treesim(dm$Lineages)
+#' S$Paths[,rc:=paste(row.node,col.node,sep='_')]
+#' dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
+#' sum(S$Paths$rc %in% dm$Lineages$rc)/nrow(S$Paths)      ### 64% of the real rc's were ID'd
+#' sum(dm$Lineages$rc %in% S$Paths$rc)/nrow(dm$Lineages)  ### at a 53% FPR
 
-dendroMap <- function(X,row.tree,col.tree,forbidden.nodes=NULL,ncores=NULL,quantile.threshold=0.7){
+dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01){
   
   ### Align dataset to trees
   if (!all(rownames(X) %in% row.tree$tip.label)){
@@ -18,88 +47,30 @@ dendroMap <- function(X,row.tree,col.tree,forbidden.nodes=NULL,ncores=NULL,quant
     }
     X <- X[,col.tree$tip.label]
   }
-  
-  ### a function for internal use - find maximum nodeSeq
-  seqstat <- function(Seq){
-    if (is.null(Seq)){
-      return(-Inf)
-    } else {
-      return(sum(abs(Seq$statistic)))
-    }
-  }
-  
+
   row.nodemap <- dendromap:::makeNodeMap(row.tree)
   col.nodemap <- dendromap:::makeNodeMap(col.tree)
-  W <- treeBasis(row.tree)
-  V <- treeBasis(col.tree)
-  U <- t(W) %*% X %*% V
   
+  rc_table <- makeRCtable(N,row.tree,col.tree)
+  ### filter rc_table by P-val:
+  rc_table <- rc_table[P<=Pval_threshold]
+  RCmap <- makeRCMap(rc_table,row.nodemap,col.nodemap)
   
-  ###### Obtain null ecdf
-  Unull <- t(W) %*% shuffleData(X) %*% V
-  chisq <- log(unlist(Unull)^2)
-  chisq <- chisq[chisq>-10]
-  null.ecdf <- ecdf(chisq)
-  rm(list=c('Unull','chisq','V','W'))
-  gc()
-  ######
-  ###### we'll only consider node-pairs above a threshold - this threshold should be low
-  threshold <- quantile(null.ecdf,quantile.threshold)
-  threshold <- sqrt(exp(threshold)) ### only consider those with abs(U)>threshold
-  U[abs(U)<threshold] <- 0
-  ######
+  Lineages <- findLineages(RCmap,rc_table)
+  compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
-  done <- F
-  iteration=0
-  Seq <- NULL
-  while (!done){
-    iteration=iteration+1
+  i=0
+  output <- NULL
+  while (length(Lineages)>0){
+    i=i+1
+    scores <- sapply(Lineages,compute_score)
+    winner <- which.max(scores)
     
-    RowColSet <- dendromap:::makeRowColSet(U,forbidden.nodes)
-    ######### Find node-seq maximizing objective
-    if (is.null(ncores)){
-      seqs <- lapply(RowColSet,dendromap:::findNodeSeq,U=U,
-                     row.tree=row.tree,col.tree=col.tree,
-                     row.nodemap=row.nodemap,col.nodemap=col.nodemap)
-    } else {
-      if (iteration==1){
-        cl <- parallel::makeCluster(ncores)
-        parallel::clusterEvalQ(cl,library(dendromap))
-        parallel::clusterExport(cl,varlist=c('U','row.tree','col.tree',
-                                             'row.nodemap','col.nodemap','getIndexSets'))
-
-        seqs <- tryCatch(parallel::parLapply(cl,RowColSet,findNodeSeq),
-                         error=function(e) e)
-       if ('error' %in% class(seqs)){
-          error.message <- paste('Error in findBestSeq. Iteration',iteration,
-                                 'returned the following error:',as.character(seqs))
-          parallel::stopCluster(cl)
-          rm('cl')
-          gc()
-          stop(error.message)
-        }
-      }
-    }
-    max.nodeseq <- which.max(sapply(seqs,seqstat))
-    if (length(max.nodeseq)==0 | is.na(max.nodeseq) | is.infinite(seqstat(seqs[[max.nodeseq]]))){
-      stop(paste('max.nodeseq returned unacceptable value:',max.nodeseq))
-    }
-    
-    ####### find ancestors
-    Seq <- rbind(Seq,seqs[[max.nodeseq]])
-    row.node <- Seq$row.node[1]
-    col.node <- Seq$col.node[1]
-    
-    ancestors <- matchAncestors(U,row.node,col.node,row.tree,col.tree)
-    if (!is.null(ancestors)){
-      # ancestor.seq <- ...F(ancestors)
-      # Seq <- rbind(Seq,)
-    }
-    ####### find descendants: 
-    descendants <- matchDescendants(U,seqs[[max.nodeseq]],row.tree,col.tree,
-                                    row.nodemap,col.nodemap,quantile.threshold)
-    
+    output_table <- rc_table[rc_index %in% Lineages[[winner]]]
+    output_table[,Lineage:=i]
+    output <- rbind(output,output_table)
+    Lineages <- filterWinnerFromLineages(winner,Lineages,rc_table,row.nodemap)
   }
-  
-  which.max(sapply(seqs,seqstat))
+  output <- list('Lineages'=output,'Data'=N,'row.tree'=row.tree,'col.tree'=col.tree)
+  return(output)
 }
