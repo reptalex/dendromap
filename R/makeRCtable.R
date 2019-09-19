@@ -7,13 +7,14 @@
 #' @param V \code(treeBasis(col.tree))
 #' @param n_sim number of simulatd null datasets (used to compuate approximate P values for r-c node pairs)
 makeRCtable <- function(N,row.tree,col.tree,W=NULL,V=NULL,n_sim=NULL){
+  
   if (is.null(W)){
     W <- treeBasis(row.tree)
   }
   if (is.null(V)){
     V <- treeBasis(col.tree)
   }
-  U <- t(W) %*% N %*% V
+  U <- t(W) %*% as.matrix(N) %*% V
   row.nodes <- sapply(rownames(U),strsplit,'_') %>% sapply(getElement,2) %>% as.numeric
   col.nodes <- sapply(colnames(U),strsplit,'_') %>% sapply(getElement,2) %>% as.numeric
   
@@ -24,8 +25,8 @@ makeRCtable <- function(N,row.tree,col.tree,W=NULL,V=NULL,n_sim=NULL){
   if (is.null(n_sim)){
     n_sim <- ceiling(10000/(nrow(N)*ncol(N)))
   }
-  rsim <- function(x,N,W,V) abs(c(t(W) %*% N[sample(nrow(N)),sample(ncol(N))] %*% V))
-  null_cdf <- ecdf(sapply(1:n_sim,rsim,N,W,V))
+  rsim <- function(x,N,W,V) abs(c(t(W) %*% as.matrix(N[sample(nrow(N)),sample(ncol(N))]) %*% V))
+  null_cdf <- sapply(1:n_sim,rsim,N,W,V) %>% ecdf
   rc_table[,P:=1-null_cdf(abs(stat))]
   if (any(rc_table$P==0)){
     warning('Some P-values are 0. Will replace with 1/(n_sim*nrow(N)*ncol(N))')

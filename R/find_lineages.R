@@ -1,4 +1,5 @@
 #' find lineages with RCmap
+#' @export
 #' @param RCmap see \code{\link{makeRCmap}}
 #' @param rc_table see \code{\link{makeRCtable}}
 #' @param row.nodemap \code{\link{makeNodeMap}} of row.tree

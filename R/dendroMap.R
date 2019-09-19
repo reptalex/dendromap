@@ -51,7 +51,7 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01){
   row.nodemap <- dendromap:::makeNodeMap(row.tree)
   col.nodemap <- dendromap:::makeNodeMap(col.tree)
   
-  rc_table <- makeRCtable(N,row.tree,col.tree)
+  rc_table <- makeRCtable(X,row.tree,col.tree)
   ### filter rc_table by P-val:
   rc_table <- rc_table[P<=Pval_threshold]
   RCmap <- makeRCMap(rc_table,row.nodemap,col.nodemap)
@@ -71,6 +71,6 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01){
     output <- rbind(output,output_table)
     Lineages <- filter_winner(winner,Lineages,rc_table,row.nodemap)
   }
-  output <- list('Lineages'=output,'Data'=N,'row.tree'=row.tree,'col.tree'=col.tree)
+  output <- list('Lineages'=output,'Data'=X,'row.tree'=row.tree,'col.tree'=col.tree)
   return(output)
 }
