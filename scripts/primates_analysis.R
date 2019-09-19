@@ -37,6 +37,40 @@ W <- treeBasis(col.tree)
 
 U <- t(V) %*% Data %*% W
 
+shuffleData <- function(Data,rows=TRUE,cols=TRUE){
+  if (rows){
+    ix.rows <- sample(nrow(Data))
+  } else {
+    ix.rows <- 1:nrow(Data)
+  }
+  if (cols){
+    ix.cols <- sample(ncol(Data))
+  } else {
+    ix.cols <- 1:ncol(Data)
+  }
+  return(Data[ix.rows,ix.cols])
+}
+
+Unull <- t(V) %*% shuffleData(Data) %*% W
+
+
+DF <- data.table('z'=c(log(c(as.matrix(U))^2),
+                       log(c(as.matrix(Unull))^2)),
+                 'Dataset'=rep(c('Primates','Null'),each=nrow(U)*ncol(U)))
+
+ggplot(DF[z>-10],aes(z,by=Dataset,fill=Dataset))+
+  geom_histogram(bins=100,alpha=0.4,position='identity')
+
+z <- DF[Dataset=='Primates' & z>-10,z]
+znull <- DF[Dataset=='Null' & z>-10,z]
+
+
+BM <- basalMaxima(Data,row.tree,col.tree,ncores=7)
+
+par(mfrow=c(1,1))
+plot(ecdf(z),lwd=2)
+lines(ecdf(znull),lwd=2,
+      col=rgb(0.6,0.1,0.2,0.6))
 
 z <- log(c(as.matrix(U))^2)
 z <- z[z>-10]

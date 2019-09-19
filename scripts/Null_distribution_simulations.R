@@ -51,6 +51,28 @@ png(filename = 'Figures/Null_distribution_of_U.png',height = 7,width=10,units='i
   abline(0,1)
 dev.off()
 
+
+#### Does shuffling the rows/columns preserve this distribution?
+shuffleData <- function(Data,rows=TRUE,cols=TRUE){
+  if (rows){
+    ix.rows <- sample(nrow(Data))
+  } else {
+    ix.rows <- 1:nrow(Data)
+  }
+  if (cols){
+    ix.cols <- sample(ncol(Data))
+  } else {
+    ix.cols <- 1:ncol(Data)
+  }
+  return(Data[ix.rows,ix.cols])
+}
+Us <- t(V) %*% shuffleData(X) %*% W
+ys <- c(Us)
+
+par(mfrow=c(1,1))
+qqplot(y,ys)
+abline(0,1)
+
 var(c(U))
 sqrt(m*n)*(0.1*(1-0.1))  ## sqrt(m*n)*var(X[i,j])
 

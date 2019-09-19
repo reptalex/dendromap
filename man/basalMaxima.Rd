@@ -5,7 +5,7 @@
 \title{Find maximum nodes in u along independent nodepaths to root}
 \usage{
 basalMaxima(X, row.tree, col.tree = NULL, W = NULL, V = NULL,
-  threshold = 5, ncores = NULL)
+  threshold = NULL, min.val = -10, ncores = NULL)
 }
 \arguments{
 \item{X}{Data matrix of number of rows equal to \code{length(row.tree$tip.label)} and number of columns equal to \code{length(col.tree$tip.label)}}
@@ -18,7 +18,9 @@ basalMaxima(X, row.tree, col.tree = NULL, W = NULL, V = NULL,
 
 \item{V}{appropriately named \code{\link{treeBasis}} for \code{col.tree} or subset of that basis.}
 
-\item{threshold}{absolute value below which nodes and nodepaths are dropped from consideration. Default is 0}
+\item{threshold}{absolute value below which nodes and nodepaths are dropped from consideration. Default is \code{4*sd(log(U^2))}}
+
+\item{min.val}{minimum value for \eqn{log(U^2)}, where \eqn{U=W'XV}. All values below \code{min.val} will be set to 0}
 
 \item{ncores}{Number of cores for parallel computation of \code{basalMax}}
 }

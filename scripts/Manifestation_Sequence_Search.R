@@ -21,7 +21,7 @@ nodelabels(c(17,19),c(17,19),bg='red')
 
 ## column nodes 17, 19
 ## row nodes 40, 46
-## orientation: positive
+## orientation for (40,17): positive
 
 set.seed(2)
 eta <- W[,c(40,46)-m] %*% diag(c(10,-3)) %*% t(V[,c(17,19)-n])
@@ -202,4 +202,20 @@ which.max(sapply(seqs,seqstat))
 
 seqs[[122]]
 
+
+
+
+
 Sim <- basalMaxima(N,row.tree,col.tree,W,V,2)
+
+### Now we have two nodes, an ancestor & its descendant. We need to fill out
+### the ancestors & all other descendants
+max.nodeseq <- which.max(sapply(seqs,seqstat))
+
+####### find ancestors
+row.node <- seqs[[max.nodeseq]]$row.node[1]
+col.node <- seqs[[max.nodeseq]]$col.node[1]
+
+ancestors <- matchAncestors(U,row.node,col.node,row.tree,col.tree)
+
+
