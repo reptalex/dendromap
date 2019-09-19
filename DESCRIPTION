@@ -23,5 +23,6 @@ Imports:
   ggtree (>= 1.14.6),
   ggplot2 (>= 3.1.0),
   cowplot (>= 0.9.4),
-  viridis (>= 0.5.1)
+  viridis (>= 0.5.1),
+  igraph (>= 1.2.4.1)
 RoxygenNote: 6.1.1
