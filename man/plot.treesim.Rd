@@ -4,7 +4,7 @@
 \alias{plot.treesim}
 \title{Plot treesim object}
 \usage{
-\method{plot}{treesim}(x, y = NULL, color.fcn.clade = viridis::viridis,
+plot.treesim(x, y = NULL, color.fcn.clade = viridis::viridis,
   color.fcn.node = viridis::viridis, heatmap.offset = 0,
   col.tr.left = 0.5, col.tr.width = 0.45, col.tr.bottom = 0.75)
 }

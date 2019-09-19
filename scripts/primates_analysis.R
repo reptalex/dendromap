@@ -1,4 +1,4 @@
-library(phylofactor)
+library(dendromap)
 library(ggplot2)
 library(biomformat)
 library(Biostrings)
@@ -32,6 +32,9 @@ all(col.tree$tip.label %in% colnames(Data))
 Data <- Data[row.tree$tip.label,]
 Data <- Data[,col.tree$tip.label]
 
+
+
+# Is there signal? --------------------------------------------------------
 V <- treeBasis(row.tree)
 W <- treeBasis(col.tree)
 
@@ -65,7 +68,12 @@ z <- DF[Dataset=='Primates' & z>-10,z]
 znull <- DF[Dataset=='Null' & z>-10,z]
 
 
-BM <- basalMaxima(Data,row.tree,col.tree,ncores=7)
+
+# dendromap ---------------------------------------------------------------
+
+
+
+dm <- dendromap(Data,row.tree,col.tree)
 
 par(mfrow=c(1,1))
 plot(ecdf(z),lwd=2)

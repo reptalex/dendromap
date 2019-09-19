@@ -56,7 +56,7 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01){
   rc_table <- rc_table[P<=Pval_threshold]
   RCmap <- makeRCMap(rc_table,row.nodemap,col.nodemap)
   
-  Lineages <- findLineages(RCmap,rc_table)
+  Lineages <- find_lineages(RCmap,rc_table)
   compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
   i=0
@@ -69,7 +69,7 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01){
     output_table <- rc_table[rc_index %in% Lineages[[winner]]]
     output_table[,Lineage:=i]
     output <- rbind(output,output_table)
-    Lineages <- filterWinnerFromLineages(winner,Lineages,rc_table,row.nodemap)
+    Lineages <- filter_winner(winner,Lineages,rc_table,row.nodemap)
   }
   output <- list('Lineages'=output,'Data'=N,'row.tree'=row.tree,'col.tree'=col.tree)
   return(output)

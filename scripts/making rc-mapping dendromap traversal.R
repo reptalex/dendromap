@@ -259,7 +259,7 @@ rc_seqs <- function(i,RCmap){
 
 
 
-check.joinable <- function(seq1,seq2,Seqs,rc_table,r.nodemap,c.nodemap){
+check_joinable <- function(seq1,seq2,Seqs,rc_table,r.nodemap,c.nodemap){
   
   ### some of these lists are whole lineages
   ### some are alternative sequences of the same lineage
@@ -329,7 +329,7 @@ findLineages <- function(RCmap,rc_table,
   tbl <- data.table('seq1'=rep(1:(n-1),times=(n-1):1),key='seq1')
   tbl[,seq2:=(seq1+1):n,by=seq1]
   
-  joinability <- apply(t(tbl),2,FUN=function(x,s,rc,r,c) check.joinable(x[1],x[2],s,rc,r,c),
+  joinability <- apply(t(tbl),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
                          s=Seqs,rc=rc_table,r=row.nodemap,c=col.nodemap)
   tbl[,joinability:=joinability]
   ### we recursively group joinable sequences into unique index sets...
