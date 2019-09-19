@@ -1,6 +1,10 @@
 ####### seq search
-library(igraph)
-library(phylofactor)
+# library(igraph)
+# library(phylofactor)
+# library(data.table)
+# library(ape)
+# library(magrittr)
+library(dendromap)
 
 set.seed(1)
 m <- 200
