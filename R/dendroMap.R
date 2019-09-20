@@ -1,9 +1,11 @@
+
 #' dendromap - find cophylogenetic patterns in a dataset
 #' @export
 #' @param X matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}
 #' @param row.tree phylo class object. Polytomies will be ignored.
 #' @param col.tree phylo class object. Polytomies will be ignored.
-#' @param Pval_threshold Threshold "significance" of a row-column node pair for consideration in lineages
+#' @param fdr_threshold number between 0 or 1, the upper bound approximate fdr of row-col node-pair statistics for inclusion in our search
+#' @param Pval_threshold Threshold "significance" of a row-column node pair for consideration in lineages. If input, will override \code{fdr_threshold}
 #' @param W optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param V optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param n_sim optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}
@@ -22,16 +24,16 @@
 #' N <- apply(X,2,clrinv) %>% apply(2,rmlt)
 #' rownames(N) <- row.tree$tip.label
 #' colnames(N) <- col.tree$tip.label
-#' dm <- dendromap(N,row.tree,col.tree) 
+#' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V) 
 #' 
 #' plot.dendromap(S)
 #' plot.dendromap(dm)
 #' S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 #' dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-#' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### 64% of the real rc's were ID'd
-#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)  ### at a 53% FPR
+#' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### 78.6% of the real rc's were ID'd
+#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)  ### at a 100% true positive rate
 
-dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL){
+dendromap <- function(X,row.tree,col.tree,fdr_threshold=0.2,Pval_threshold=NULL,W=NULL,V=NULL,n_sim=NULL){
   
   base::cat(paste('Checking Data and tree compatibility'))
   ### Align dataset to trees
@@ -58,10 +60,17 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_si
 
   base::cat(paste('\nMaking RC table with',n_sim,'null simulations'))
   rc_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim)
+  rc_table <- rc_table[P<max(P)]
+  rc_table[,fdr:=p.adjust(P,'fdr')]
+  if (!is.null(Pval_threshold)){
+    rc_table <- rc_table[P<=Pval_threshold]
+    base::cat(paste('\n',nrow(rc_table),' RCs had P<=Pval_threshold at Pval_threshold=',Pval_threshold,sep=''))
+  } else {
+
+    rc_table <- rc_table[fdr<=fdr_threshold]
+    base::cat(paste('\n',nrow(rc_table),' RCs had fdr<fdr_threshold at fdr_threshold=',Pval_threshold,sep=''))
+  }
   
-  rc_table <- rc_table[P<=Pval_threshold]
-  
-  base::cat(paste('\n',nrow(rc_table),' RCs had P<=Pval_threshold at P=',Pval_threshold,sep=''))
   RCmap <- makeRCMap(rc_table,row.nodemap,col.nodemap)
   
   
@@ -70,13 +79,12 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_si
   compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
   base::cat(paste('\nRC-RC Tree traversal found',length(Lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
-
+  base::cat(paste('\nFiltering RC sequences into lineages'))
+  
   i=0
   output <- NULL
   while (length(Lineages)>0){
     i=i+1
-    
-    base::cat(paste('\nFiltering RC sequences into lineages! Iteration',i))
 
     scores <- sapply(Lineages,compute_score)
     winner <- which.max(scores)

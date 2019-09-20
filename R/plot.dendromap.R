@@ -30,7 +30,7 @@ plot.dendromap <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
                          col.tr.bottom=0.75){
   
   if (is.null(x$Lineages$orientation)){
-    x[,orientation:=sign(stat)]
+    x$Lineages[,orientation:=sign(stat)]
   }
   vcols <- color.fcn.node(length(unique(x$Lineages$col.node)))
   nodecols <- data.table('node'=sort(unique(x$Lineages$col.node),decreasing = F),
@@ -66,7 +66,7 @@ plot.dendromap <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   ## add clade hilights for basal nodes
   cols <- color.fcn.clade(max(x$Lineages$Lineage))
   ii=0
-  start.nodes <- x$Lineages[,list(nd=row.node[1]),by=Lineage]$nd
+  start.nodes <- x$Lineages[,list(nd=min(row.node)),by=Lineage]$nd
   for (nd in start.nodes){
     ii=ii+1
     gg <- gg+ggtree::geom_hilight(nd,fill=cols[ii])

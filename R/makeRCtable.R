@@ -25,12 +25,19 @@ makeRCtable <- function(N,row.tree,col.tree,W=NULL,V=NULL,n_sim=NULL){
   if (is.null(n_sim)){
     n_sim <- ceiling(10000/(nrow(N)*ncol(N)))
   }
-  rsim <- function(x,N,W,V) abs(c(t(W) %*% as.matrix(N[sample(nrow(N)),sample(ncol(N))]) %*% V))
-  null_cdf <- sapply(1:n_sim,rsim,N,W,V) %>% ecdf
-  rc_table[,P:=1-null_cdf(abs(stat))]
+  rsim <- function(x,N,W,V) log((c(t(W) %*% as.matrix(N[sample(nrow(N)),sample(ncol(N))]) %*% V))^2)
+  y <- sapply(1:n_sim,rsim,N,W,V)
+  null_cdf <-  ecdf(y)
+  rc_table[,P:=1-null_cdf(log(stat^2))]
   if (any(rc_table$P==0)){
-    warning('Some P-values are 0. Will replace with 1/(n_sim*nrow(N)*ncol(N))')
-    rc_table[P==0,P:=1/(2*n_sim*nrow(N)*ncol(N))]
+    warning('Some P-values were 0. Will estimate tail probabilities assuming log(stat^2)~rnorm(mu,sd). You may want to consider manually increasing n_sim for more accurate null distribution')
+    y <- y[y>-20]
+    mu <- mean(y)
+    sig <- sd(y)
+    min.P <- rc_table[P>0,min(P)]
+    stat.min <- max(log(rc_table[P>0][P==min(P),stat]^2))
+    estimate_tail <- function(y1,mu,sig,ymin,pmin) (1-pnorm(y1,mu,sig))/(1-pnorm(ymin,mu,sig))*pmin
+    rc_table[P==0,P:=estimate_tail(log(stat^2),mu,sig,stat.min,min.P)]
   }
   rc_table[,rc_index:=1:.N]
   setkey(rc_table,row.node,col.node)
