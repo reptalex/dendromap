@@ -69,7 +69,7 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_si
   Lineages <- find_lineages(RCmap,rc_table,row.nodemap,col.nodemap)
   compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
-  base::cat(paste('\nRC-RC Tree traversal found',length(lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
+  base::cat(paste('\nRC-RC Tree traversal found',length(Lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
 
   i=0
   output <- NULL
