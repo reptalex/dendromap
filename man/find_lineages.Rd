@@ -4,8 +4,7 @@
 \alias{find_lineages}
 \title{find lineages with RCmap}
 \usage{
-find_lineages(RCmap, rc_table, row.nodemap. = row.nodemap,
-  col.nodemap. = col.nodemap)
+find_lineages(RCmap, rc_table, row.nodemap, col.nodemap)
 }
 \arguments{
 \item{RCmap}{see \code{\link{makeRCmap}}}

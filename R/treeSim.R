@@ -51,11 +51,11 @@
 #' col.depths <- data.table('col.depth'=node.depth.edgelength(col.tree))
 #' col.depths[,col.node:=1:.N]
 #' setkey(col.depths,col.node)
-#' setkey(S$Paths,row.node)
-#' Paths <- row.depths[S$Paths]
+#' setkey(S$Lineages,row.node)
+#' Paths <- row.depths[S$Lineages]
 #' setkey(Paths,col.node)
 #' Paths <- col.depths[Paths]
-#' Paths[,Lineage:=factor(sim)]
+#' Paths[,Lineage:=factor(Lineage)]
 #' 
 #' depthPlot=ggplot(Paths,aes(row.depth,col.depth,color=Lineage))+
 #'                  geom_point()+
@@ -183,10 +183,10 @@ treeSim <- function(n,row.tree,col.tree,
     }
   }
   for (i in 1:length(Path)){
-    Path[[i]][,sim:=i]
+    Path[[i]][,Lineage:=i]
   }
   output <- NULL
-  output$Paths <- data.table::rbindlist(Path)
+  output$Lineages <- data.table::rbindlist(Path)
   if (is.null(W)){
     W <- treeBasis(row.tree)
   }
@@ -194,13 +194,13 @@ treeSim <- function(n,row.tree,col.tree,
     V <- treeBasis(col.tree)
   }
   
-  output$W <- W[,output$Paths$row.node-ape::Ntip(row.tree)]
-  dd <- rnorm(nrow(output$Paths),sd=sd)
-  dd <- abs(dd)*output$Paths$orientation
+  output$W <- W[,output$Lineages$row.node-ape::Ntip(row.tree)]
+  dd <- rnorm(nrow(output$Lineages),sd=sd)
+  dd <- abs(dd)*output$Lineages$orientation
   output$D <- diag(dd)
-  output$V <- V[,output$Paths$col.node-ape::Ntip(col.tree)]
+  output$V <- V[,output$Lineages$col.node-ape::Ntip(col.tree)]
   output$row.tree <- row.tree
   output$col.tree <- col.tree
-  class(output) <- 'treesim'
+  class(output) <- 'dendromap'
   return(output)
 }

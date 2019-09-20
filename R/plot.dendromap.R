@@ -1,6 +1,6 @@
-#' Plot treesim object
+#' Plot dendromap object
 #' @export
-#' @param x treesim class object from \code{\link{treeSim}}
+#' @param x dendromap class object from \code{\link{treeSim}} or \code{\link{dendromap}}
 #' @param y optional data matrix. Must have labelled rows containing all tips in \code{x$row.tree} and likewise for \code{x$col.tree}
 #' @param color.fcn.clade color function for clade highlights in \code{\link{ggtree}}
 #' @param color.fcn.node color function for node circles
@@ -22,49 +22,40 @@
 #' plot(S,col.tr.left = 0.47,
 #'      col.tr.width = 0.505,
 #'      col.tr.bottom = 0.74)
-
-plot.treesim <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
+plot.dendromap <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
                          color.fcn.node=viridis::viridis,
                          heatmap.offset=0,
                          col.tr.left=0.5,
                          col.tr.width=0.45,
                          col.tr.bottom=0.75){
   
-  if (is.null(x$orientation)){
+  if (is.null(x$Lineages$orientation)){
     x[,orientation:=sign(stat)]
   }
   vcols <- color.fcn.node(length(unique(x$Lineages$col.node)))
   nodecols <- data.table('node'=sort(unique(x$Lineages$col.node),decreasing = F),
                          'color'=vcols)
-  gtr <- ggtree::ggtree(S$col.tree,branch.length = 'none')+
+  gtr <- ggtree::ggtree(x$col.tree,branch.length = 'none')+
     ggtree::geom_point2(ggplot2::aes(subset=node %in% nodecols$node),
                         color=nodecols$color,cex=3)+
     ggplot2::coord_flip()+ggplot2::scale_x_reverse()+
     ggplot2::scale_y_reverse()
   
   ###### processing data matrix
-  column.order <- gtr$data$label[order(gtr$data$y[1:ape::Ntip(S$col.tree)],decreasing = T)]
+  column.order <- gtr$data$label[order(gtr$data$y[1:ape::Ntip(x$col.tree)],decreasing = T)]
   if (is.null(y)){
-    X <- S$W %*% S$D %*% t(S$V)
-    X <- X[,column.order]
-    rownames(X) <- S$row.tree$tip.label
-    probs <- binomial(link='logit')$linkinv(X)
-    probs[X==0] <- 0.05
-    P <- rbinom(nrow(X)*ncol(X),1,probs) %>% 
-      matrix(nrow=nrow(X),byrow=F)
-    rownames(P) <- rownames(X)
-  } else {
-    X <- y
-    if (!all(S$col.tree$tip.label %in% colnames(y))){
-      stop('colnames of y must have all col.tree tip-labels')
-    } else if (!all(S$row.tree$tip.label %in% rownames(y))){
-      stop('rownames of y must have all row.tree tip-labels')
+    if (is.null(x$Data)){
+      if (is.null(x$W) | is.null(x$V) | is.null(x$D)){
+        y <- base::matrix(0,nrow=ape::ntip(x$row.tree),ncol=ape::ntip(col.tree))
+      } else {
+        y <- x$W %*% x$D %*% t(x$V)
+      }
     } else {
-      P <- y[S$row.tree$tip.label,column.order]
+      y <- x$Data
     }
   }
   
-  gg <- ggtree::ggtree(row.tree,layout='rectangular')
+  gg <- ggtree::ggtree(x$row.tree,layout='rectangular',branch.length = 'none')
   
   ##flip all the nodes with orientation=-1
   nds <- x$Lineages[orientation==-1,row.node]
@@ -75,7 +66,7 @@ plot.treesim <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   ## add clade hilights for basal nodes
   cols <- color.fcn.clade(max(x$Lineages$Lineage))
   ii=0
-  start.nodes <- x$Lineages[,list(nd=row.node[1]),by=sim]$nd
+  start.nodes <- x$Lineages[,list(nd=row.node[1]),by=Lineage]$nd
   for (nd in start.nodes){
     ii=ii+1
     gg <- gg+ggtree::geom_hilight(nd,fill=cols[ii])
@@ -87,10 +78,7 @@ plot.treesim <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   gg <- gg+ggtree::geom_point2(ggplot2::aes(subset=node %in% Path$row.node),
                                color=gg.cols,cex=3)
   
-  P <- as.data.frame(P)
-  colnames(P) <- colnames(X)
-  rownames(P) <- rownames(X)
-  gg <- ggtree::gheatmap(gg,P,color=NA,colnames = FALSE,offset=heatmap.offset)+
+  gg <- ggtree::gheatmap(gg,as.matrix(y),color=NA,colnames = FALSE,offset=heatmap.offset)+
     ggtree::theme(legend.position = 'none')+cowplot::theme_nothing()
   
   output <- cowplot::ggdraw() + 
@@ -99,5 +87,4 @@ plot.treesim <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
     cowplot::draw_plot(gg, x = 0, y = 0.05, width = 1, height = .7)
   
   return(output)
-  
 }

@@ -4,7 +4,8 @@
 \alias{dendromap}
 \title{dendromap - find cophylogenetic patterns in a dataset}
 \usage{
-dendromap(X, row.tree, col.tree, Pval_threshold = 0.01)
+dendromap(X, row.tree, col.tree, Pval_threshold = 0.01, W = NULL,
+  V = NULL, n_sim = NULL)
 }
 \arguments{
 \item{X}{matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}}
@@ -14,6 +15,12 @@ dendromap(X, row.tree, col.tree, Pval_threshold = 0.01)
 \item{col.tree}{phylo class object. Polytomies will be ignored.}
 
 \item{Pval_threshold}{Threshold "significance" of a row-column node pair for consideration in lineages}
+
+\item{W}{optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.}
+
+\item{V}{optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.}
+
+\item{n_sim}{optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}}
 }
 \description{
 dendromap - find cophylogenetic patterns in a dataset
@@ -35,10 +42,10 @@ rownames(N) <- row.tree$tip.label
 colnames(N) <- col.tree$tip.label
 dm <- dendromap(N,row.tree,col.tree) 
 
-plot.treesim(S)
+plot.dendromap(S)
 plot.treesim(dm$Lineages)
-S$Paths[,rc:=paste(row.node,col.node,sep='_')]
+S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-sum(S$Paths$rc \%in\% dm$Lineages$rc)/nrow(S$Paths)      ### 64\% of the real rc's were ID'd
-sum(dm$Lineages$rc \%in\% S$Paths$rc)/nrow(dm$Lineages)  ### at a 53\% FPR
+sum(S$Lineages$rc \%in\% dm$Lineages$rc)/nrow(S$Lineages)      ### 64\% of the real rc's were ID'd
+sum(dm$Lineages$rc \%in\% S$Lineages$rc)/nrow(dm$Lineages)  ### at a 53\% FPR
 }

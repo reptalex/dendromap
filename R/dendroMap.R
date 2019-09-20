@@ -24,12 +24,12 @@
 #' colnames(N) <- col.tree$tip.label
 #' dm <- dendromap(N,row.tree,col.tree) 
 #' 
-#' plot.treesim(S)
-#' plot.treesim(dm$Lineages)
-#' S$Paths[,rc:=paste(row.node,col.node,sep='_')]
+#' plot.dendromap(S)
+#' plot.dendromap(dm)
+#' S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 #' dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-#' sum(S$Paths$rc %in% dm$Lineages$rc)/nrow(S$Paths)      ### 64% of the real rc's were ID'd
-#' sum(dm$Lineages$rc %in% S$Paths$rc)/nrow(dm$Lineages)  ### at a 53% FPR
+#' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### 64% of the real rc's were ID'd
+#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)  ### at a 53% FPR
 
 dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL){
   
@@ -87,5 +87,6 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_si
     Lineages <- filter_winner(winner,Lineages,rc_table,row.nodemap)
   }
   output <- list('Lineages'=output,'Data'=X,'row.tree'=row.tree,'col.tree'=col.tree)
+  class(output) <- 'dendromap'
   return(output)
 }

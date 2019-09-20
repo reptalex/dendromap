@@ -86,11 +86,11 @@ setkey(row.depths,row.node)
 col.depths <- data.table('col.depth'=node.depth.edgelength(col.tree))
 col.depths[,col.node:=1:.N]
 setkey(col.depths,col.node)
-setkey(S$Paths,row.node)
-Paths <- row.depths[S$Paths]
+setkey(S$Lineages,row.node)
+Paths <- row.depths[S$Lineages]
 setkey(Paths,col.node)
 Paths <- col.depths[Paths]
-Paths[,Lineage:=factor(sim)]
+Paths[,Lineage:=factor(Lineage)]
 
 depthPlot=ggplot(Paths,aes(row.depth,col.depth,color=Lineage))+
                  geom_point()+
