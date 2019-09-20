@@ -5,8 +5,8 @@
 #' @param row.nodemap \code{\link{makeNodeMap}} of row.tree
 #' @param col.nodemap \code{\link{makeNodeMap}} of col.tree
 find_lineages <- function(RCmap,rc_table,
-                         row.nodemap.=row.nodemap,
-                         col.nodemap.=col.nodemap){
+                         row.nodemap,
+                         col.nodemap){
   ### will start with index as descendant and traverse up
   ix <- which(RCmap$terminal)
   Seqs <- lapply(ix,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique

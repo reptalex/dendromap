@@ -4,6 +4,9 @@
 #' @param row.tree phylo class object. Polytomies will be ignored.
 #' @param col.tree phylo class object. Polytomies will be ignored.
 #' @param Pval_threshold Threshold "significance" of a row-column node pair for consideration in lineages
+#' @param W optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
+#' @param V optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
+#' @param n_sim optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}
 #' @examples
 #' library(dendromap)
 #' set.seed(1)
@@ -28,7 +31,7 @@
 #' sum(S$Paths$rc %in% dm$Lineages$rc)/nrow(S$Paths)      ### 64% of the real rc's were ID'd
 #' sum(dm$Lineages$rc %in% S$Paths$rc)/nrow(dm$Lineages)  ### at a 53% FPR
 
-dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01){
+dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL){
   
   ### Align dataset to trees
   if (!all(rownames(X) %in% row.tree$tip.label)){
@@ -51,12 +54,12 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01){
   row.nodemap <- dendromap:::makeNodeMap(row.tree)
   col.nodemap <- dendromap:::makeNodeMap(col.tree)
   
-  rc_table <- makeRCtable(X,row.tree,col.tree)
+  rc_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim)
   ### filter rc_table by P-val:
   rc_table <- rc_table[P<=Pval_threshold]
   RCmap <- makeRCMap(rc_table,row.nodemap,col.nodemap)
   
-  Lineages <- find_lineages(RCmap,rc_table)
+  Lineages <- find_lineages(RCmap,rc_table,row.nodemap,col.nodemap)
   compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
   i=0

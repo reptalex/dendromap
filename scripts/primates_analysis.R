@@ -3,6 +3,7 @@ library(ggplot2)
 library(biomformat)
 library(Biostrings)
 library(ggpubr)
+library(tictoc)
 
 ##### BasalMaxima analysis of primate data
 
@@ -35,10 +36,10 @@ Data <- Data[,col.tree$tip.label]
 
 
 # Is there signal? --------------------------------------------------------
-V <- treeBasis(row.tree)
-W <- treeBasis(col.tree)
+W <- treeBasis(row.tree)
+V <- treeBasis(col.tree)
 
-U <- t(V) %*% Data %*% W
+U <- t(W) %*% Data %*% V
 
 shuffleData <- function(Data,rows=TRUE,cols=TRUE){
   if (rows){
@@ -54,7 +55,7 @@ shuffleData <- function(Data,rows=TRUE,cols=TRUE){
   return(Data[ix.rows,ix.cols])
 }
 
-Unull <- t(V) %*% shuffleData(Data) %*% W
+Unull <- t(W) %*% shuffleData(Data) %*% V
 
 
 DF <- data.table('z'=c(log(c(as.matrix(U))^2),
@@ -72,8 +73,9 @@ znull <- DF[Dataset=='Null' & z>-10,z]
 # dendromap ---------------------------------------------------------------
 
 
-
-dm <- dendromap(Data,row.tree,col.tree)
+tic()
+dm <- dendromap(Data,row.tree,col.tree)  
+toc()
 
 # par(mfrow=c(1,1))
 # plot(ecdf(z),lwd=2)
