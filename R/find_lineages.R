@@ -5,11 +5,13 @@
 #' @param row.nodemap \code{\link{makeNodeMap}} of row.tree
 #' @param col.nodemap \code{\link{makeNodeMap}} of col.tree
 find_lineages <- function(RCmap,rc_table,
-                         row.nodemap,
-                         col.nodemap){
+                          row.nodemap,
+                          col.nodemap){
   ### will start with index as descendant and traverse up
   ix <- which(RCmap$terminal)
+  base::cat('\nThere are',length(ix),'terminal nodes. Saddle up and find the trunk, ants!')
   Seqs <- lapply(ix,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique
+  base::cat('\nFound',length(Seqs),'RC sequences')
   n <- length(Seqs)
   
   
@@ -26,10 +28,18 @@ find_lineages <- function(RCmap,rc_table,
   ### these sets will be complete subgraphs in the graph for joinability==TRUE
   ### We can find these with the function igraph::cliques
   joinables <- tbl[joinability==TRUE]
-  joinable.edges <- split(joinables[,c(1,2)],seq(nrow(joinables))) %>% unlist
+  nedge <- nrow(joinables)
+  nvert <- length(unique(unlist(joinables[,c('seq1','seq2')])))
+  base::cat(paste('\nFound',nedge,'joinable RC sequences \ncontaining',nvert,' joinable pairs. \n...how hard is it to find cliques in a graph of',nvert,'vertices and',nedge,'edges?'))
+  joinable.edges <- split(joinables[,c('seq1','seq2')],seq(nrow(joinables))) %>% unlist
+  
   G <- igraph::make_graph(joinable.edges,directed = F)
+  
+  base::cat('\nMaking cliques')
   joinable.seqs <- igraph::cliques(G) ### now we need to remove elements that are strict subsets of other sets
   joinable.seqs <- joinable.seqs[order(sapply(joinable.seqs,length),decreasing = F)]
+  base::cat(paste('\nFound joinable cliques of sizes',sapply(joinable.seqs,length)[1:5],'...'))
+  base::cat('\nRemoving subsets to find maximal cliques')
   for (i in 1:(length(joinable.seqs)-1)){
     check.subset <- any(sapply(joinable.seqs[(i+1):length(joinable.seqs)],
                                FUN=function(a,b) all(b %in% a),b=joinable.seqs[[i]]))
@@ -38,6 +48,7 @@ find_lineages <- function(RCmap,rc_table,
     }
   }
   found.cliques <- !sapply(joinable.seqs,FUN=function(x) all(is.na(x)))
+  base::cat(paste('\nThere are',sum(found.cliques),'cliques remaining'))
   joinable.seqs <- joinable.seqs[found.cliques]
   joinable.seqs <- c(setdiff(unique(unlist(tbl[,c(1,2)])),joinable.seqs),
                      joinable.seqs)
