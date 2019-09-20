@@ -33,6 +33,7 @@
 
 dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL){
   
+  base::cat(paste('Checking Data and tree compatibility'))
   ### Align dataset to trees
   if (!all(rownames(X) %in% row.tree$tip.label)){
     stop('There are rownames(X) not in row.tree$tip.label')
@@ -51,21 +52,32 @@ dendromap <- function(X,row.tree,col.tree,Pval_threshold=0.01,W=NULL,V=NULL,n_si
     X <- X[,col.tree$tip.label]
   }
 
+  base::cat(paste('\nMaking Nodemaps'))
   row.nodemap <- dendromap:::makeNodeMap(row.tree)
   col.nodemap <- dendromap:::makeNodeMap(col.tree)
-  
+
+  base::cat(paste('\nMaking RC table with',n_sim,'null simulations'))
   rc_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim)
-  ### filter rc_table by P-val:
+  
   rc_table <- rc_table[P<=Pval_threshold]
+  
+  base::cat(paste('\n',nrow(rc_table),' RCs had P<=Pval_threshold at P=',Pval_threshold,sep=''))
   RCmap <- makeRCMap(rc_table,row.nodemap,col.nodemap)
   
+  
+  base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
   Lineages <- find_lineages(RCmap,rc_table,row.nodemap,col.nodemap)
   compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
+  base::cat(paste('\nRC-RC Tree traversal found',length(lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
+
   i=0
   output <- NULL
   while (length(Lineages)>0){
     i=i+1
+    
+    base::cat(paste('\nFiltering RC sequences into lineages! Iteration',i))
+
     scores <- sapply(Lineages,compute_score)
     winner <- which.max(scores)
     

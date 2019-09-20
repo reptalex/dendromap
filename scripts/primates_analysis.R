@@ -74,7 +74,7 @@ znull <- DF[Dataset=='Null' & z>-10,z]
 
 
 tic()
-dm <- dendromap(Data,row.tree,col.tree)  
+dm <- dendromap(Data,row.tree,col.tree,Pval_threshold = 0.001)  
 toc()
 
 # par(mfrow=c(1,1))
