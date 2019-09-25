@@ -78,7 +78,7 @@ znull <- DF[Dataset=='Null' & z>-10,z]
 
 
 tic()
-dm <- dendromap(Data,row.tree,col.tree,Pval_threshold = 0.0008)  
+dm <- dendromap(Data,row.tree,col.tree,W=W,V=V,Pval_threshold = 0.01)  
 toc()
 
 Lineages <- dm$Lineages

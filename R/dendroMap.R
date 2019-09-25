@@ -24,7 +24,7 @@
 #' N <- apply(X,2,clrinv) %>% apply(2,rmlt)
 #' rownames(N) <- row.tree$tip.label
 #' colnames(N) <- col.tree$tip.label
-#' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V) 
+#' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,Pval_threshold=0.1) 
 #' 
 #' plot.dendromap(S)
 #' plot.dendromap(dm)
