@@ -6,7 +6,7 @@
 #' @param Col_Descendants named \code{getIndexSets} of all col.nodes
 #' @param cl cluster with library \code{dendromap} loaded on each worker
 find_lineages <- function(RCmap,rc_table,
-                          Row_Descendnats,
+                          Row_Descendants,
                           Col_Descendants,cl=NULL){
   ### will start with index as descendant and traverse up
   nds <- unique(RCmap[terminal==TRUE,descendant])

@@ -4,7 +4,7 @@
 \alias{find_lineages}
 \title{find lineages with RCmap}
 \usage{
-find_lineages(RCmap, rc_table, Row_Descendnats, Col_Descendants,
+find_lineages(RCmap, rc_table, Row_Descendants, Col_Descendants,
   cl = NULL)
 }
 \arguments{
@@ -12,11 +12,11 @@ find_lineages(RCmap, rc_table, Row_Descendnats, Col_Descendants,
 
 \item{rc_table}{see \code{\link{makeRCtable}}}
 
+\item{Row_Descendants}{named \code{getIndexSets} of all row.nodes}
+
 \item{Col_Descendants}{named \code{getIndexSets} of all col.nodes}
 
 \item{cl}{cluster with library \code{dendromap} loaded on each worker}
-
-\item{Row_Descendants}{named \code{getIndexSets} of all row.nodes}
 }
 \description{
 find lineages with RCmap
