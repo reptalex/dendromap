@@ -4,16 +4,19 @@
 \alias{find_lineages}
 \title{find lineages with RCmap}
 \usage{
-find_lineages(RCmap, rc_table, row.nodemap, col.nodemap)
+find_lineages(RCmap, rc_table, Row_Descendnats, Col_Descendants,
+  cl = NULL)
 }
 \arguments{
 \item{RCmap}{see \code{\link{makeRCmap}}}
 
 \item{rc_table}{see \code{\link{makeRCtable}}}
 
-\item{row.nodemap}{\code{\link{makeNodeMap}} of row.tree}
+\item{Col_Descendants}{named \code{getIndexSets} of all col.nodes}
 
-\item{col.nodemap}{\code{\link{makeNodeMap}} of col.tree}
+\item{cl}{cluster with library \code{dendromap} loaded on each worker}
+
+\item{Row_Descendants}{named \code{getIndexSets} of all row.nodes}
 }
 \description{
 find lineages with RCmap

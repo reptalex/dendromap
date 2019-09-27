@@ -4,10 +4,10 @@
 \alias{rc_seqs}
 \title{Walk ant path from descendant - get sequence of ancestral rc's from distal rc}
 \usage{
-rc_seqs(i, RCmap)
+rc_seqs(nd, RCmap)
 }
 \arguments{
-\item{i}{index - wihch descendant of \code{RCmap} to for which to find ancestral rc sequence}
+\item{nd}{node - element of \code{RCmap$descendanat} for which we find ancestral rc sequence}
 
 \item{RCmap}{made in \code{\link{makeRCmap}}}
 }

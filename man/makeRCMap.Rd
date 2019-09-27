@@ -4,7 +4,7 @@
 \alias{makeRCMap}
 \title{make rc-rc mapping for ancestor-descendant relationships & rc tree traversal}
 \usage{
-makeRCMap(rc_table, row.nodemap, col.nodemap)
+makeRCMap(rc_table, Row_Descendants, Col_Descendants)
 }
 \arguments{
 \item{rc_table}{made from \code{\link{makeRCtable}}}

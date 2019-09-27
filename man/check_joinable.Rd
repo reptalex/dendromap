@@ -4,7 +4,8 @@
 \alias{check_joinable}
 \title{check if two rc_seqs are joinable}
 \usage{
-check_joinable(seq1, seq2, Seqs, rc_table, r.nodemap, c.nodemap)
+check_joinable(seq1, seq2, Seqs, rc_table, Row_Descendants,
+  Col_Descendants)
 }
 \arguments{
 \item{seq1}{index of sequence from \code{\link{rc_seqs}}}
@@ -15,9 +16,9 @@ check_joinable(seq1, seq2, Seqs, rc_table, r.nodemap, c.nodemap)
 
 \item{rc_table}{made in \code{\link{makeRCtable}}}
 
-\item{r.nodemap}{\code{makeNodeMap} of row.tree}
+\item{Row_Descendants}{named \code{getIndexSets} of all row.nodes}
 
-\item{c.nodemap}{\code{makeNodeMap} of col.tree}
+\item{Col_Descendants}{named \code{getIndexSets} of all col.nodes}
 }
 \description{
 check if two rc_seqs are joinable

@@ -4,8 +4,8 @@
 \alias{dendromap}
 \title{dendromap - find cophylogenetic patterns in a dataset}
 \usage{
-dendromap(X, row.tree, col.tree, fdr_threshold = 0.2,
-  Pval_threshold = NULL, W = NULL, V = NULL, n_sim = NULL)
+dendromap(X, row.tree, col.tree, ncores = NULL, fdr_threshold = 0.2,
+  Pval_threshold = 0.1, W = NULL, V = NULL, n_sim = NULL)
 }
 \arguments{
 \item{X}{matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}}
@@ -13,6 +13,8 @@ dendromap(X, row.tree, col.tree, fdr_threshold = 0.2,
 \item{row.tree}{phylo class object. Polytomies will be ignored.}
 
 \item{col.tree}{phylo class object. Polytomies will be ignored.}
+
+\item{ncores}{If not NULL, then integer specifying number of cores to use for parallelizable steps}
 
 \item{fdr_threshold}{number between 0 or 1, the upper bound approximate fdr of row-col node-pair statistics for inclusion in our search}
 
@@ -34,7 +36,7 @@ m=1000
 n=10
 row.tree <- rtree(m)
 col.tree <- rtree(n)
-S <- treeSim(5,row.tree,col.tree,col.node=n+1)
+S <- treeSim(5,row.tree,col.tree,col.node=n+1) 
 eta <- S$W \%*\% (10*S$D) \%*\% t(S$V)
 X <- eta+matrix(rnorm(m*n),nrow=m)
 clrinv <- function(x) exp(x)/sum(exp(x))
@@ -42,12 +44,12 @@ rmlt <- function(p,lambda=5e3) rmultinom(1,rpois(1,lambda),prob = p)
 N <- apply(X,2,clrinv) \%>\% apply(2,rmlt)
 rownames(N) <- row.tree$tip.label
 colnames(N) <- col.tree$tip.label
-dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,Pval_threshold=0.1) 
+dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V) 
 
 plot.dendromap(S)
 plot.dendromap(dm)
 S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 sum(S$Lineages$rc \%in\% dm$Lineages$rc)/nrow(S$Lineages)      ### 78.6\% of the real rc's were ID'd
-sum(dm$Lineages$rc \%in\% S$Lineages$rc)/nrow(dm$Lineages)  ### at a 100\% true positive rate
+sum(dm$Lineages$rc \%in\% S$Lineages$rc)/nrow(dm$Lineages)     ### at a 92\% true positive rate
 }
