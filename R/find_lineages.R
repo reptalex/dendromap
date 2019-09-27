@@ -2,18 +2,22 @@
 #' @export
 #' @param RCmap see \code{\link{makeRCmap}}
 #' @param rc_table see \code{\link{makeRCtable}}
-#' @param row.nodemap \code{\link{makeNodeMap}} of row.tree
-#' @param col.nodemap \code{\link{makeNodeMap}} of col.tree
+#' @param Row_Descendants named \code{getIndexSets} of all row.nodes
+#' @param Col_Descendants named \code{getIndexSets} of all col.nodes
+#' @param cl cluster with library \code{dendromap} loaded on each worker
 find_lineages <- function(RCmap,rc_table,
-                          row.nodemap,
-                          col.nodemap){
+                          Row_Descendnats,
+                          Col_Descendants,cl=NULL){
   ### will start with index as descendant and traverse up
-  ix <- which(RCmap$terminal)
-  base::cat('\nThere are',length(ix),'terminal nodes. Traversing RC tree from all terminal nodes. ')
+  nds <- unique(RCmap[terminal==TRUE,descendant])
+  base::cat('\nThere are',length(nds),'terminal nodes. Traversing RC tree from all terminal nodes.')
   
   ### parallelizable
-  Seqs <- lapply(ix,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique
-  
+  if (is.null(cl)){
+    Seqs <- lapply(nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique
+  } else {
+    Seqs <- parLapply(cl,nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique
+  }
   
   n <- length(Seqs)
   tbl <- data.table('seq1'=rep(1:(n-1),times=(n-1):1),key='seq1')
@@ -28,8 +32,13 @@ find_lineages <- function(RCmap,rc_table,
   ### We can find these with the function igraph::cliques
   
   ### parallelizable, and possibly much more efficient if vectorized w/ data.table
-  joinability <- apply(t(tbl),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
-                       s=Seqs,rc=rc_table,r=row.nodemap,c=col.nodemap)
+  if (is.null(cl)){
+    joinability <- apply(t(tbl),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
+                         s=Seqs,rc=rc_table,r=Row_Descendants,c=Col_Descendants)
+  } else {
+    joinability <- parApply(cl=cl,t(tbl),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
+                            s=Seqs,rc=rc_table,r=Row_Descendants,c=Col_Descendants)
+  }
   tbl[,joinability:=joinability]
   
   seq.indexes <- unique(unlist(tbl[,c('seq1','seq2')]))
@@ -42,8 +51,7 @@ find_lineages <- function(RCmap,rc_table,
   joinable.edges <- VertMap[match(joinable.edges,seq),vert]
   
   base::cat(paste('\nFound',nedge,'joinable RC sequences containing',nverts,' joinable pairs. \n...how hard is it to find maximal cliques in a graph of',length(unique(joinable.edges)),'vertices and',nedge,'edges?'))
-  
-  
+
   G <- igraph::make_graph(joinable.edges,directed = F)
   
   base::cat('\nMaking cliques')
@@ -56,8 +64,13 @@ find_lineages <- function(RCmap,rc_table,
   
   
   lns <- sapply(rev(joinable.seqs),length)
-  big.lns <- paste(lns[1:5],collapse=',')
-  small.lns <- paste(lns[(length(joinable.seqs)-4):length(joinable.seqs)],collapse=',')
+  if (length(joinable.seqs)>10){
+    big.lns <- paste(lns[1:5],collapse=',')
+    small.lns <- paste(lns[(length(joinable.seqs)-4):length(joinable.seqs)],collapse=',')
+  } else {
+    small.lns <- paste(lns,collapse=',')
+    big.lns <- NULL
+  }
   base::cat(paste('\nFound',length(joinable.seqs),'joinable cliques of sizes',big.lns,'...',small.lns))
   base::cat('\nRemoving subsets to find maximal cliques')
   

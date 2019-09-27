@@ -4,9 +4,9 @@
 #' @param seq2 index of sequence from \code{\link{rc_seqs}}
 #' @param Seqs Set of sequences from \code{\link{rc_seqs}}
 #' @param rc_table made in \code{\link{makeRCtable}}
-#' @param r.nodemap \code{makeNodeMap} of row.tree
-#' @param c.nodemap \code{makeNodeMap} of col.tree
-check_joinable <- function(seq1,seq2,Seqs,rc_table,r.nodemap,c.nodemap){
+#' @param Row_Descendants named \code{getIndexSets} of all row.nodes
+#' @param Col_Descendants named \code{getIndexSets} of all col.nodes
+check_joinable <- function(seq1,seq2,Seqs,rc_table,Row_Descendants,Col_Descendants){
   
   ### some of these lists are whole lineages
   ### some are alternative sequences of the same lineage
@@ -42,11 +42,12 @@ check_joinable <- function(seq1,seq2,Seqs,rc_table,r.nodemap,c.nodemap){
       if (nds1['row.node']==nds2['row.node']){
         joinable <- FALSE
       } else {
-        RowDesc1 <- c(unlist(getIndexSets(nds1['row.node'],r.nodemap)),nds1['row.node'])
-        RowDesc2 <- c(unlist(getIndexSets(nds2['row.node'],r.nodemap)),nds2['row.node'])
+        RowDesc1 <- c(unlist(Row_Descendants[[as.character(nds1['row.node'])]]),nds1['row.node'])
+        RowDesc2 <- c(unlist(Row_Descendants[[as.character(nds2['row.node'])]]),nds2['row.node'])
+        ColDesc1 <- c(unlist(Col_Descendants[[as.character(nds1['col.node'])]]),nds1['col.node'])
+        ColDesc2 <- c(unlist(Col_Descendants[[as.character(nds2['col.node'])]]),nds2['col.node'])
+        
         Common_row_descendants <- intersect(RowDesc1,RowDesc2)
-        ColDesc1 <- c(unlist(getIndexSets(nds1['col.node'],c.nodemap)),nds1['col.node'])
-        ColDesc2 <- c(unlist(getIndexSets(nds2['col.node'],c.nodemap)),nds2['col.node'])
         Common_col_descendants <- intersect(ColDesc1,ColDesc2)
         n_common_row <- length(Common_row_descendants)
         n_common_col <- length(Common_col_descendants)
@@ -56,7 +57,6 @@ check_joinable <- function(seq1,seq2,Seqs,rc_table,r.nodemap,c.nodemap){
           joinable <- TRUE
         }
       }
-      
     }
   }
   return(joinable)

@@ -1,10 +1,9 @@
 #' Walk ant path from descendant - get sequence of ancestral rc's from distal rc
 #' @export
-#' @param i index - wihch descendant of \code{RCmap} to for which to find ancestral rc sequence
+#' @param nd node - element of \code{RCmap$descendanat} for which we find ancestral rc sequence
 #' @param RCmap made in \code{\link{makeRCmap}}
 
-rc_seqs <- function(i,RCmap){
-  nd <- RCmap$descendant[i]
+rc_seqs <- function(nd,RCmap){
   
   ### note: a given node may have multiple paths towards the root
   ### e.g. it's possible to have nodes (1,2,3,4,nd)
