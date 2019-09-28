@@ -88,9 +88,6 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,Pval_threshold=0.01,W=NULL
   names(Row_Descendants) <- row.nodes
   names(Col_Descendants) <- col.nodes
   RCmap <- makeRCMap(rc_table,Row_Descendants,Col_Descendants)
-  if (!is.null(cl)){
-    parallel::clusterExport(cl,'RCmap')
-  }
   
   base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
   Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl)
