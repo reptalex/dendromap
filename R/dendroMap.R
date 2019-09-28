@@ -5,7 +5,6 @@
 #' @param row.tree phylo class object. Polytomies will be ignored.
 #' @param col.tree phylo class object. Polytomies will be ignored.
 #' @param ncores If not NULL, then integer specifying number of cores to use for parallelizable steps
-#' @param fdr_threshold number between 0 or 1, the upper bound approximate fdr of row-col node-pair statistics for inclusion in our search
 #' @param Pval_threshold Threshold "significance" of a row-column node pair for consideration in lineages. If input, will override \code{fdr_threshold}
 #' @param W optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param V optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
@@ -25,16 +24,21 @@
 #' N <- apply(X,2,clrinv) %>% apply(2,rmlt)
 #' rownames(N) <- row.tree$tip.label
 #' colnames(N) <- col.tree$tip.label
-#' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V) 
+#' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)  
+#' #Since they've already been computed, inputting the matrices W, V saves time.
 #' 
-#' plot.dendromap(S)
-#' plot.dendromap(dm)
+#' dendromap:::print.dendromap(S)
+#' dendromap:::print.dendromap(dm)
+#' 
+#' dendromap:::plot.dendromap(S)
+#' dendromap:::plot.dendromap(dm)
+#' 
 #' S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 #' dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 #' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### 78.6% of the real rc's were ID'd
-#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)     ### at a 92% true positive rate
+#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)     ### at a 100% true positive rate
 
-dendromap <- function(X,row.tree,col.tree,ncores=NULL,fdr_threshold=0.2,Pval_threshold=0.1,W=NULL,V=NULL,n_sim=NULL){
+dendromap <- function(X,row.tree,col.tree,ncores=NULL,Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL){
   
   base::cat(paste('Checking Data and tree compatibility'))
   ### Align dataset to trees
@@ -68,16 +72,9 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,fdr_threshold=0.2,Pval_thr
   base::cat(paste('\nMaking RC table with',n_sim,'null simulations'))
   rc_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim)
   rc_table <- rc_table[P<max(P)]
-  rc_table[,fdr:=p.adjust(P,'fdr')]
-  if (!is.null(Pval_threshold)){
-    rc_table <- rc_table[P<=Pval_threshold]
-    base::cat(paste('\n',nrow(rc_table),' RCs had P<=Pval_threshold at Pval_threshold=',Pval_threshold,sep=''))
-  } else {
-
-    rc_table <- rc_table[fdr<=fdr_threshold]
-    base::cat(paste('\n',nrow(rc_table),' RCs had fdr<fdr_threshold at fdr_threshold=',Pval_threshold,sep=''))
-  }
   
+  rc_table <- rc_table[P<=Pval_threshold]
+  base::cat(paste('\n',nrow(rc_table),' RCs had P<=Pval_threshold at Pval_threshold=',Pval_threshold,sep=''))
   
   row.nodes <- unique(rc_table$row.node)
   col.nodes <- unique(rc_table$col.node)
@@ -94,7 +91,7 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,fdr_threshold=0.2,Pval_thr
   }
   
   base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
-  Lineages <- find_lineages(RCmap,rc_table,row.nodemap,col.nodemap,cl)
+  Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl)
   compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
   base::cat(paste('\nRC-RC Tree traversal found',length(Lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
@@ -112,6 +109,11 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,fdr_threshold=0.2,Pval_thr
     output_table[,Lineage:=i]
     output <- rbind(output,output_table)
     Lineages <- filter_winner(winner,Lineages,rc_table,row.nodemap)
+  }
+  if (!is.null(cl)){
+    stopCluster(cl)
+    rm('cl')
+    gc()
   }
   output <- list('Lineages'=output,'Data'=X,'row.tree'=row.tree,'col.tree'=col.tree)
   class(output) <- 'dendromap'

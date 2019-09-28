@@ -27,8 +27,46 @@ rc_table <- rc_table[P<max(P)]
 rc_table[,fdr:=p.adjust(P,'fdr')]
 Pval_threshold <- 0.05
 rc_table <- rc_table[P<=Pval_threshold]
-RCmap <- makeRCMap(rc_table,row.nodemap,col.nodemap)
 
+
+
+row.nodes <- unique(rc_table$row.node)
+col.nodes <- unique(rc_table$col.node)
+Row_Descendants <- lapply(row.nodes,getIndexSets,row.nodemap) %>%
+  lapply(FUN=function(x,a) lapply(x,intersect,a),a=row.nodes)
+Col_Descendants <- lapply(col.nodes,getIndexSets,col.nodemap) %>%
+  lapply(FUN=function(x,a) lapply(x,intersect,a),a=col.nodes)
+
+names(Row_Descendants) <- row.nodes
+names(Col_Descendants) <- col.nodes
+RCmap <- makeRCMap(rc_table,Row_Descendants,Col_Descendants)
+# if (!is.null(cl)){
+#   parallel::clusterExport(cl,'RCmap')
+# }
+
+
+base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
+Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl)
+compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
+i=0
+output <- NULL
+while (length(Lineages)>0){
+  i=i+1
+  
+  if (is.null(cl)){
+    scores <- sapply(Lineages,compute_score)
+  } else {
+    scores <- parSapply(cl=cl,Lineages,compute_score)
+  }
+  winner <- which.max(scores)
+  
+  output_table <- rc_table[rc_index %in% Lineages[[winner]]]
+  output_table[,Lineage:=i]
+  output <- rbind(output,output_table)
+  Lineages <- filter_winner(winner,Lineages,rc_table,row.nodemap)
+}
+output <- list('Lineages'=output,'Data'=X,'row.tree'=row.tree,'col.tree'=col.tree)
+class(output) <- 'dendromap'
 # tic()
 # Lineages <- find_lineages(RCmap,rc_table,row.nodemap,col.nodemap)
 # toc()
@@ -90,80 +128,121 @@ RCmap[descendant==j]
 
 nds <- unique(RCmap[terminal==TRUE,descendant])
 
-ix <- which(RCmap$terminal)
 tic()
-Seqs <- lapply(ix,rc_seqs,RCmap) %>% unlist(recursive=FALSE)
+Seqs <- lapply(nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE)
 toc()
 ## 30s
 
-cl <- makeCluster(3)
-clusterEvalQ(cl,library(dendromap))
-clusterExport(cl,setdiff(ls(),'cl'))
-nds <- unique(RCmap[terminal==TRUE]$descendant)
-tic()
-Seqs2 <- parLapply(cl,nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE)
-toc()
+# cl <- makeCluster(3)
+# clusterEvalQ(cl,library(dendromap))
+# clusterExport(cl,setdiff(ls(),'cl'))
+# nds <- unique(RCmap[terminal==TRUE]$descendant)
+# tic()
+# Seqs2 <- parLapply(cl,nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE)
+# toc()
 ## 7.8s --- WAAY FASTER! There are ~1000 nodes vs. 3000 indexes. Plus parallelization = this is good!
 
-sqs <- sapply(Seqs2,FUN=function(a,b) b %in% a, b=j) %>% which
-Seqs2[sqs]
+# sqs <- sapply(Seqs2,FUN=function(a,b) b %in% a, b=j) %>% which
+# Seqs2[sqs]
 
-Seqs <- Seqs2
+# Seqs <- Seqs2
 
 # check_joinable ----------------------------------------------------------
 n <- length(Seqs)
+Seqs <- Seqs[order(sapply(Seqs,getElement,1))]
 tbl <- data.table('seq1'=rep(1:(n-1),times=(n-1):1),key='seq1')
 tbl[,seq2:=(seq1+1):n,by=seq1]  ## this table has all pairwise indexes we need to check.
 ### We might be able to better index these, perhaps as far back as Seqs
 
+
+#### trimming table:
+
+
 ############# ORIGINAL 
-tic()
-joinability <- parApply(cl=cl,t(tbl),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
-                        s=Seqs,rc=rc_table,r=row.nodemap,c=col.nodemap)
-toc()
-## 9.4s
+setkey(rc_table,rc_index)
 
-stopCluster(cl)
-rm('cl')
-
-tic()
 tic()
 joinability <- apply(t(tbl),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
-                     s=Seqs,rc=rc_table,r=row.nodemap,c=col.nodemap)
+                     s=Seqs,rc=rc_table,r=Row_Descendants,c=Col_Descendants)
 toc()
-## 23.7s
+## 9s for P=0.05
+## 158s for P=0.1
 
-#### Now to see if we can speed up check_joinable
-profvis({apply(t(tbl[1:1000]),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
-               s=Seqs,rc=rc_table,r=row.nodemap,c=col.nodemap)})
-
-ixs <- unique(unlist(Seqs))
 
 tic()
-joinable <- apply(t(tbl),2,FUN=function(x,s,rc,r,c) cj(x[1],x[2],s,rc,r,c),
-      s=Seqs,rc=rc_table,r=Row_Descendants,c=Col_Descendants)
+rc_ix <- unique(unlist(Seqs))
 toc()
-#6s - SWEEET
 
-profvis({apply(t(tbl),2,FUN=function(x,s,rc,r,c) cj(x[1],x[2],s,rc,r,c),
-               s=Seqs,rc=rc_table,r=Row_Descendants,c=Col_Descendants)})
+tic()
+rctbl <- rc_table[rc_index %in% rc_ix]
+setkey(rctbl,rc_index)
+toc()
+trim_table <- function(rc_ix,tbl){ ### gpu matrix multiplication to trim table 
+  A <- sapply(Seqs,FUN=function(a,b) as.numeric(b %in% a),b=rc_ix) %>%
+    Matrix::Matrix(sparse=T)# will have one colum for every Seq
+  ix <- (Matrix::t(A) %*% A)[as.matrix(tbl)]>0 ### here we can gpu-compute t(A) %*% A - VERY useful for large tbl & sparse mat
+  tbl <- tbl[ix]
+  return(tbl)
+}
+tic()
+tbl2 <- trim_table(rc_ix,tbl)
+toc()
+# 0.01 for P=0.05
+# 0.09s  4 P=0.1
 
-length(unique(rc_table[rc_index %in% ixs,row.node])) #132
-length(unique(rc_table[rc_index %in% ixs,col.node])) #9
-nrow(tbl)                                            #8256...
-## We only need to compute descendants for row tree 132 times, and for col tree 9 times
-## instead, the above algo has us compute it about 16,500 times!!!
+tic()
+joinability2 <- apply(t(tbl2),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
+                     s=Seqs,rc=rc_table,r=Row_Descendants,c=Col_Descendants)
+toc()
+# 8.9s for P=0.05
+# 160s for P=0.1
 
-## can change check_joinable to take as input 
+tic()
+joinability3 <- apply(t(tbl2),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
+                      s=Seqs,rc=rctbl,
+                      r=Row_Descendants,c=Col_Descendants)
+toc()
+### it seems the checking of overlap is not costly, but rather the checking of descendants
+
+profvis({apply(t(tbl),2,FUN=function(x,s,rc,r,c) check_joinable(x[1],x[2],s,rc,r,c),
+              s=Seqs,rc=rc_table,r=Row_Descendants,c=Col_Descendants)})
+
+getBranchPoint <- function(seq1,seq2,Seqs){
+  intrsct <- intersect(Seqs[[seq1]],Seqs[[seq2]])
+  branch_points1 <- !Seqs[[seq1]]%in%intrsct
+  branch_points2 <- !Seqs[[seq2]]%in%intrsct
+  
+  ix1 <- Seqs[[seq1]][min(which(branch_points1))]
+  ix2 <- Seqs[[seq2]][min(which(branch_points2))]
+  return(c('ix1'=ix1,'ix2'=ix2))
+}
 
 
-### check-joinability is currently a bottleneck - we need to speed this up bigtime.
-### One possibility: dynamically construct a reference for seqs using only their roots
-  ## - for seqs with the same root, we calculate descendants only once, as getIndexSets takes the most time
-### to subset tbl into seqs with possible compatibility.
+tic()
+rc_ix <- unique(unlist(Seqs))
+rctbl <- rc_table[rc_index %in% rc_ix]
+tbl2 <- trim_table(rc_ix,tbl)
+branch_points <- mapply(FUN=getBranchPoint,seq1=tbl2$seq1,seq2=tbl2$seq2,
+                        MoreArgs = list('Seqs'=Seqs)) %>% t %>% as.data.table()
+branch_points[,ix:=1:.N]
+colnames(branch_points)[1] <- 'rc_index'
+setkey(branch_points,rc_index)
+branch_points <- rctbl[,c('rc_index','row.node','col.node')][branch_points]
+names(branch_points)[1:4] <- c('ix1','rn1','cn1','rc_index')
+setkey(branch_points,rc_index)
+branch_points <- rctbl[,c('rc_index','row.node','col.node')][branch_points]
+names(branch_points)[1:3] <- c('ix2','rn2','cn2')
+# tbl3 <- cbind(tbl2,branch_points)[,c('seq1','seq1','rn1','rn2','cn1','cn2')]
+joinability <- mapply(FUN=cj,
+                       rn1=branch_points$rn1,
+                       rn2=branch_points$rn2,
+                       cn1=branch_points$cn1,
+                       cn2=branch_points$cn2,
+                  MoreArgs = list('Row_Descendants'=Row_Descendants,
+                                  'Col_Descendants'=Col_Descendants))
+toc()
 
-### Must make sure our new output is the same as the old output
-
+setkey(rc_table,row.node,col.node)
 
 ############# NEW
 ## 
