@@ -4,12 +4,17 @@
 \alias{find_joinables}
 \title{internal function to find joinable RC sequences}
 \usage{
-find_joinables(Seqs, rc_table, cl = NULL)
+find_joinables(Seqs, rc_table, Row_Descendants, Col_Descendants,
+  cl = NULL)
 }
 \arguments{
 \item{Seqs}{output from \code{\link{rc_seqs}}}
 
 \item{rc_table}{output from \code{\link{makeRCtable}}}
+
+\item{Row_Descendants}{named \code{getIndexSets} of all row.nodes}
+
+\item{Col_Descendants}{named \code{getIndexSets} of all col.nodesd}
 
 \item{cl}{optional cluster with dendromap loaded}
 }

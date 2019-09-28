@@ -2,7 +2,7 @@
 #' @param Seqs output from \code{\link{rc_seqs}}
 #' @param rc_table output from \code{\link{makeRCtable}}
 #' @param Row_Descendants named \code{getIndexSets} of all row.nodes
-#' @param Col_Descendants named \code{getIndexSets} of all col.nodes
+#' @param Col_Descendants named \code{getIndexSets} of all col.nodesd
 #' @param cl optional cluster with dendromap loaded
 find_joinables <- function(Seqs,rc_table,Row_Descendants,Col_Descendants,cl=NULL){
   setkey(rc_table,rc_index)
