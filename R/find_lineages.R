@@ -20,7 +20,7 @@ find_lineages <- function(RCmap,rc_table,
   
   
   #### JOINABILITY
-  tbl <- dendromap:::find_joinables(Seqs,rc_table,cl)
+  tbl <- dendromap:::find_joinables(Seqs,rc_table,Row_Descendants,Col_Descendants,cl)
 
   #### JOINABILITY GRAPH
   seq.indexes <- unique(unlist(tbl[,c('seq1','seq2')]))
