@@ -25,7 +25,8 @@
 #' rownames(N) <- row.tree$tip.label
 #' colnames(N) <- col.tree$tip.label
 #' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)
-#' # dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2)  
+#' ## can use multiple cores for parallelization. Will speed-up large datasets
+#' # dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)  
 #' #Since they've already been computed, inputting the matrices W, V saves time.
 #' 
 #' dendromap:::print.dendromap(S)
@@ -112,7 +113,7 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,Pval_threshold=0.01,W=NULL
     Lineages <- filter_winner(winner,Lineages,rc_table,row.nodemap)
   }
   if (!is.null(cl)){
-    stopCluster(cl)
+    parallel::stopCluster(cl)
     rm('cl')
     gc()
   }

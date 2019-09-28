@@ -1,8 +1,8 @@
 #' make rc-rc mapping for ancestor-descendant relationships & rc tree traversal
 #' @export
 #' @param rc_table made from \code{\link{makeRCtable}}
-#' @param row.nodemap made from \code{\link{makeNodeMap}} of row.tree
-#' @param col.nodemap made from \code{\link{makeNodeMap}} of col.tree
+#' @param Row_Descendants named \code{getIndexSets} of all row.nodes
+#' @param Col_Descendants named \code{getIndexSets} of all col.nodes
 makeRCMap <- function(rc_table,Row_Descendants,Col_Descendants){
   row.nodes <- as.numeric(names(Row_Descendants))
   col.nodes <- as.numeric(names(Col_Descendants))
