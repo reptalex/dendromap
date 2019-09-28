@@ -15,7 +15,7 @@ find_lineages <- function(RCmap,rc_table,
   if (is.null(cl)){
     Seqs <- lapply(nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique
   } else {
-    Seqs <- parLapply(cl,nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique
+    Seqs <- parallel::parLapply(cl,nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique
   }
   
   

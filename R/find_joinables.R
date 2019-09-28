@@ -44,7 +44,7 @@ find_joinables <- function(Seqs,rc_table,Row_Descendants,Col_Descendants,cl=NULL
                          FUN=function(x,r,c) check_joinable(x[1],x[2],x[3],x[4],r,c),
                          r=Row_Descendants,c=Col_Descendants)
   } else {
-    joinability <- parallel::parApply(cl,as.matrix(branch_points[,c('rn1','rn2','cn1','cn2')]),1,
+    joinability <- parallel::parApply(cl=cl,X=as.matrix(branch_points[,c('rn1','rn2','cn1','cn2')]),1,
                                        FUN=function(x,r,c) check_joinable(x[1],x[2],x[3],x[4],r,c),
                                        r=Row_Descendants,c=Col_Descendants)
   }

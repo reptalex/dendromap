@@ -24,7 +24,8 @@
 #' N <- apply(X,2,clrinv) %>% apply(2,rmlt)
 #' rownames(N) <- row.tree$tip.label
 #' colnames(N) <- col.tree$tip.label
-#' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)  
+#' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)
+#' # dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2)  
 #' #Since they've already been computed, inputting the matrices W, V saves time.
 #' 
 #' dendromap:::print.dendromap(S)
