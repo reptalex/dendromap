@@ -42,10 +42,15 @@ rmlt <- function(p,lambda=5e3) rmultinom(1,rpois(1,lambda),prob = p)
 N <- apply(X,2,clrinv) \%>\% apply(2,rmlt)
 rownames(N) <- row.tree$tip.label
 colnames(N) <- col.tree$tip.label
-dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V) 
+dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)  
+#Since they've already been computed, inputting the matrices W, V saves time.
+
+dendromap:::print.dendromap(S)
+dendromap:::print.dendromap(dm)
 
 dendromap:::plot.dendromap(S)
 dendromap:::plot.dendromap(dm)
+
 S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 sum(S$Lineages$rc \%in\% dm$Lineages$rc)/nrow(S$Lineages)      ### 78.6\% of the real rc's were ID'd

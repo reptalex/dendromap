@@ -4,10 +4,14 @@
 \alias{check_joinable}
 \title{check if two rc_seqs are joinable}
 \usage{
-check_joinable(seq1, seq2, Seqs, rc_table, Row_Descendants,
+check_joinable(row.node1, row.node2, col.node1, col.node2, Row_Descendants,
   Col_Descendants)
 }
 \arguments{
+\item{Row_Descendants}{named \code{getIndexSets} of all row.nodes}
+
+\item{Col_Descendants}{named \code{getIndexSets} of all col.nodes}
+
 \item{seq1}{index of sequence from \code{\link{rc_seqs}}}
 
 \item{seq2}{index of sequence from \code{\link{rc_seqs}}}
@@ -15,10 +19,6 @@ check_joinable(seq1, seq2, Seqs, rc_table, Row_Descendants,
 \item{Seqs}{Set of sequences from \code{\link{rc_seqs}}}
 
 \item{rc_table}{made in \code{\link{makeRCtable}}}
-
-\item{Row_Descendants}{named \code{getIndexSets} of all row.nodes}
-
-\item{Col_Descendants}{named \code{getIndexSets} of all col.nodes}
 }
 \description{
 check if two rc_seqs are joinable

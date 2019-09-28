@@ -2,6 +2,7 @@
 
 S3method(plot,dendromap)
 S3method(plot,treesim)
+S3method(print,dendromap)
 export(ancestorTable)
 export(basalMax)
 export(basalMaxima)
@@ -29,6 +30,5 @@ export(treeMap)
 export(treeSim)
 export(warpTree)
 import(data.table)
-import(ape)
 import(magrittr)
-
+import(ape)
