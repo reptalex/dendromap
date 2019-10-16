@@ -5,7 +5,8 @@
 \title{dendromap - find cophylogenetic patterns in a dataset}
 \usage{
 dendromap(X, row.tree, col.tree, ncores = NULL, Pval_threshold = 0.01,
-  W = NULL, V = NULL, n_sim = NULL)
+  W = NULL, V = NULL, n_sim = NULL, big_graph_definition = 100,
+  time.limit = 1, nreps = 10)
 }
 \arguments{
 \item{X}{matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}}
@@ -23,6 +24,12 @@ dendromap(X, row.tree, col.tree, ncores = NULL, Pval_threshold = 0.01,
 \item{V}{optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.}
 
 \item{n_sim}{optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}}
+
+\item{big_graph_definition}{integer size of graph (number of vertices) above which \code{\link{max_clique_SA}} will be used to find weighted max clique}
+
+\item{time.limit}{runtime limit for \code{\link{max_clique_SA}}}
+
+\item{nreps}{input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}}
 }
 \description{
 dendromap - find cophylogenetic patterns in a dataset
@@ -42,7 +49,9 @@ rmlt <- function(p,lambda=5e3) rmultinom(1,rpois(1,lambda),prob = p)
 N <- apply(X,2,clrinv) \%>\% apply(2,rmlt)
 rownames(N) <- row.tree$tip.label
 colnames(N) <- col.tree$tip.label
-dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)  
+dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)
+## can use multiple cores for parallelization. Will speed-up large datasets
+# dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)  
 #Since they've already been computed, inputting the matrices W, V saves time.
 
 dendromap:::print.dendromap(S)

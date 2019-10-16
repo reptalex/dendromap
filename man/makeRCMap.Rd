@@ -9,9 +9,9 @@ makeRCMap(rc_table, Row_Descendants, Col_Descendants)
 \arguments{
 \item{rc_table}{made from \code{\link{makeRCtable}}}
 
-\item{row.nodemap}{made from \code{\link{makeNodeMap}} of row.tree}
+\item{Row_Descendants}{named \code{getIndexSets} of all row.nodes}
 
-\item{col.nodemap}{made from \code{\link{makeNodeMap}} of col.tree}
+\item{Col_Descendants}{named \code{getIndexSets} of all col.nodes}
 }
 \description{
 make rc-rc mapping for ancestor-descendant relationships & rc tree traversal

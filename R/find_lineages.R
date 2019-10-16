@@ -5,9 +5,14 @@
 #' @param Row_Descendants named \code{getIndexSets} of all row.nodes
 #' @param Col_Descendants named \code{getIndexSets} of all col.nodes
 #' @param cl cluster with library \code{dendromap} loaded on each worker
+#' @param big_graph_definition integer size of graph (number of vertices) above which \code{\link{max_clique_SA}} will be used to find weighted max clique
+#' @param time.limit runtime limit for \code{\link{max_clique_SA}}
+#' @param nreps input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}
 find_lineages <- function(RCmap,rc_table,
                           Row_Descendants,
-                          Col_Descendants,cl=NULL){
+                          Col_Descendants,cl,
+                          big_graph_definition,
+                          time.limit,nreps){
   nds <- unique(RCmap[terminal==TRUE,descendant])
   base::cat('\nThere are',length(nds),'terminal nodes. Traversing RC tree from all terminal nodes.')
   
@@ -17,6 +22,7 @@ find_lineages <- function(RCmap,rc_table,
   } else {
     Seqs <- parallel::parLapply(cl,nds,rc_seqs,RCmap) %>% unlist(recursive=FALSE) %>% unique
   }
+  names(Seqs) <- paste('v_',1:length(Seqs),sep='')
   
   
   #### JOINABILITY
@@ -26,7 +32,6 @@ find_lineages <- function(RCmap,rc_table,
   seq.indexes <- unique(unlist(tbl[,c('seq1','seq2')]))
   nverts <- length(seq.indexes)
   VertMap <- data.table('seq'=seq.indexes,'vert'=paste('v',seq.indexes,sep='_'),key='vert')
- 
   joinables <- tbl[joinability==TRUE]
   nedge <- nrow(joinables)
   joinable.edges <- split(joinables[,c('seq1','seq2')],seq(nrow(joinables))) %>% unlist
@@ -36,8 +41,49 @@ find_lineages <- function(RCmap,rc_table,
   G <- igraph::make_graph(joinable.edges,directed = F)
   
   
+  
   ########## FIND MAXIMAL CLIQUES
-  joinable.seqs <- igraph::max_cliques(G,min=2)
+  sG <- igraph::clusters(G)
+  sG.vertices <- lapply(1:sG$no,FUN=function(a,m) names(which(m==a)),m=sG$membership)
+  subgraph_sizes <- sapply(sG.vertices,length)
+  
+  base::cat(paste('\n--Max subgraph size=',max(subgraph_sizes),
+                  ' and big_graph_definition=',big_graph_definition,sep=''))
+  if (any(subgraph_sizes>=big_graph_definition)){
+    SubGraphs <- lapply(sG.vertices,igraph::induced_subgraph,graph=G)
+    big_graphs <- SubGraphs[subgraph_sizes>=big_graph_definition]
+    base::cat(paste('\n--Using max_clique_SA on',length(big_graphs),'subgraphs'))
+    small_graphs <- SubGraphs[subgraph_sizes<big_graph_definition]
+    rc_scores <- rc_table[,-log(P)]
+    names(rc_scores) <- rc_table$rc_index
+    if (is.null(cl)){
+      seq_scores <- sapply(Seqs,FUN=function(s,rc_table) -sum(log(rc_table[rc_index %in% s,P])),rc_table)
+    } else {
+      seq_scores <- parallel::parSapply(cl,Seqs,FUN=function(s,rc_table) -sum(log(rc_table[rc_index %in% s,P])),rc_table)
+    }
+    names(seq_scores) <- paste('v_',1:length(Seqs),sep='')
+    if (is.null(cl)){
+      big_cliques <- lapply(big_graphs,max_clique_SA,Seqs,rc_scores,seq_scores,time.limit,nreps)
+    } else {
+      big_cliques <- parallel::parLapply(cl,big_graphs,max_clique_SA,Seqs,rc_scores,seq_scores,time.limit,nreps)
+    }
+    big_cliques <- lapply(big_cliques,getElement,'clique')
+    small_cliques <- lapply(small_graphs,igraph::max_cliques)
+    getScore <- function(s,Seqs,rc_scores)    -sum(log(rc_scores[as.character(unique(unlist(Seqs[s])))]))
+    if (length(small_cliques)>0){
+      for (i in 1:length(small_cliques)){
+        if (length(small_cliques[[i]])>1){
+          scores <- sapply(small_cliques[[i]],getScore,Seqs,rc_scores)
+          small_cliques[[i]] <- names(small_cliques[[i]][[which.max(scores)]])
+        } else {
+          small_cliques[[i]] <- names(small_cliques[[i]][[1]])
+        }
+      }
+    }
+    joinable.seqs <- c(big_cliques,small_cliques)
+  } else {
+    joinable.seqs <- igraph::max_cliques(G,min=2)
+  }
   joinable.seqs <- joinable.seqs[order(sapply(joinable.seqs,length),decreasing = F)]
   
   
@@ -50,7 +96,7 @@ find_lineages <- function(RCmap,rc_table,
     big.lns <- NULL
   }
   base::cat(paste('\nFound',length(joinable.seqs),'joinable cliques of sizes',big.lns,'...',small.lns))
-  base::cat('\nRemoving subsets to find maximal cliques')
+  # base::cat('\nRemoving subsets to find maximal cliques')
   ### below can be parallelized, but now is unncessary b.c. we're using max_cliques?
   # for (i in 1:(length(joinable.seqs)-1)){
   #   check.subset <- any(sapply(joinable.seqs[(i+1):length(joinable.seqs)],
@@ -60,7 +106,6 @@ find_lineages <- function(RCmap,rc_table,
   #   }
   # }
   found.cliques <- !sapply(joinable.seqs,FUN=function(x) all(is.na(x)))
-  base::cat(paste('\nThere are',sum(found.cliques),'cliques remaining'))
   joinable.seqs <- joinable.seqs[found.cliques]
   
   ## add disconnected RC's

@@ -20,7 +20,7 @@ makeRCtable <- function(N,row.tree,col.tree,W=NULL,V=NULL,n_sim=NULL){
   
   rc_table <- data.table(expand.grid('row.node'=row.nodes,
                                      'col.node'=col.nodes),
-                         'stat'=c(U))
+                         'stat'=c(U),key=c('row.node','col.node'))
   gc()
   if (is.null(n_sim)){
     n_sim <- ceiling(10000/(nrow(N)*ncol(N)))
@@ -39,8 +39,7 @@ makeRCtable <- function(N,row.tree,col.tree,W=NULL,V=NULL,n_sim=NULL){
     estimate_tail <- function(y1,mu,sig,ymin,pmin) (1-pnorm(y1,mu,sig))/(1-pnorm(ymin,mu,sig))*pmin
     rc_table[P==0,P:=estimate_tail(log(stat^2),mu,sig,stat.min,min.P)]
   }
-  rc_table[,rc_index:=1:.N]
-  setkey(rc_table,row.node,col.node)
+  rc_table[,rc_index:=1:nrow(rc_table)]
   rm(list=c('U','W','V'))
   gc()
   return(rc_table)

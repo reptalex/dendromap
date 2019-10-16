@@ -80,6 +80,14 @@ znull <- DF[Dataset=='Null' & z>-10,z]
 tic()
 dm <- dendromap(Data,row.tree,col.tree,W=W,V=V,Pval_threshold = 0.0008)  
 toc()
+#62.6s
+saveRDS('data/primates/dendromap_P8e-4_threshold')
+
+
+tic()
+dm <- dendromap(Data,row.tree,col.tree,W=W,V=V,Pval_threshold = 0.005,ncores=7)  
+toc() ## here, the max clique step took most of the time.
+saveRDS('data/primates/dendromap_P5e-3_threshold')
 
 Lineages <- dm$Lineages
 Lineages[,n:=.N,by=Lineage]

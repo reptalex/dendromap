@@ -9,6 +9,9 @@
 #' @param W optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param V optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param n_sim optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}
+#' @param big_graph_definition integer size of graph (number of vertices) above which \code{\link{max_clique_SA}} will be used to find weighted max clique
+#' @param time.limit runtime limit for \code{\link{max_clique_SA}}
+#' @param nreps input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}
 #' @examples
 #' library(dendromap)
 #' set.seed(1)
@@ -17,16 +20,17 @@
 #' row.tree <- rtree(m)
 #' col.tree <- rtree(n)
 #' S <- treeSim(5,row.tree,col.tree,col.node=n+1) 
-#' eta <- S$W %*% (10*S$D) %*% t(S$V)
+#' eta <- S$W %*% (10*sign(S$D)) %*% t(S$V)
 #' X <- eta+matrix(rnorm(m*n),nrow=m)
 #' clrinv <- function(x) exp(x)/sum(exp(x))
 #' rmlt <- function(p,lambda=5e3) rmultinom(1,rpois(1,lambda),prob = p)
 #' N <- apply(X,2,clrinv) %>% apply(2,rmlt)
 #' rownames(N) <- row.tree$tip.label
 #' colnames(N) <- col.tree$tip.label
-#' dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)
-#' ## can use multiple cores for parallelization. Will speed-up large datasets
-#' # dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)  
+#' dm <- dendromap(N,row.tree,col.tree,Pval_threshold=0.005)
+#' ## can use multiple cores for parallelization. Will speed-up large datasets.
+#' ## big graphs have to be handled with an alternative max_clique algorithm: max_clique_SA
+#' ## dm2 <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)
 #' #Since they've already been computed, inputting the matrices W, V saves time.
 #' 
 #' dendromap:::print.dendromap(S)
@@ -37,10 +41,12 @@
 #' 
 #' S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 #' dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-#' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### 78.6% of the real rc's were ID'd
-#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)     ### at a 100% true positive rate
+#' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### 50% of the real rc's were ID'd
+#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)     ### at a 64% true positive rate
 
-dendromap <- function(X,row.tree,col.tree,ncores=NULL,Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL){
+dendromap <- function(X,row.tree,col.tree,ncores=NULL,
+                      Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL,
+                      big_graph_definition=100,time.limit=1,nreps=20){
   
   base::cat(paste('Checking Data and tree compatibility'))
   ### Align dataset to trees
@@ -74,7 +80,6 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,Pval_threshold=0.01,W=NULL
   base::cat(paste('\nMaking RC table with',n_sim,'null simulations'))
   rc_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim)
   rc_table <- rc_table[P<max(P)]
-  
   rc_table <- rc_table[P<=Pval_threshold]
   base::cat(paste('\n',nrow(rc_table),' RCs had P<=Pval_threshold at Pval_threshold=',Pval_threshold,sep=''))
   
@@ -87,10 +92,12 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,Pval_threshold=0.01,W=NULL
   
   names(Row_Descendants) <- row.nodes
   names(Col_Descendants) <- col.nodes
-  RCmap <- makeRCMap(rc_table,Row_Descendants,Col_Descendants)
-  
+  RCmap <- tryCatch(makeRCMap(rc_table,Row_Descendants,Col_Descendants),error=function(e) NULL)
+  if (is.null(RCmap)){
+    stop('Did not find any row-tree/column-tree node sequences using the input P-value threshold and n_sim')
+  }
   base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
-  Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl)
+  Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl,big_graph_definition,time.limit,nreps)
   compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
   base::cat(paste('\nRC-RC Tree traversal found',length(Lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
