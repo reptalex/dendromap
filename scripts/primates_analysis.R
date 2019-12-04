@@ -78,16 +78,21 @@ znull <- DF[Dataset=='Null' & z>-10,z]
 
 
 tic()
-dm <- dendromap(Data,row.tree,col.tree,W=W,V=V,Pval_threshold = 0.0008)  
+dm <- dendromap(Data,row.tree,col.tree,W=W,V=V,Pval_threshold = 0.001,ncores=7)  
 toc()
-#62.6s
-saveRDS('data/primates/dendromap_P8e-4_threshold')
-
-
-tic()
-dm <- dendromap(Data,row.tree,col.tree,W=W,V=V,Pval_threshold = 0.005,ncores=7)  
-toc() ## here, the max clique step took most of the time.
-saveRDS('data/primates/dendromap_P5e-3_threshold')
+#24.75s
+# saveRDS(dm,'data/primates/dendromap_P8e-4_threshold')
+saveRDS(dm,'data/primates/dendromap_P1e-3_threshold')
+# 
+# tic()
+# dm <- dendromap(Data,row.tree,col.tree,W=W,V=V,Pval_threshold = 0.005,ncores=7)  
+# toc() ## here, the max clique step took most of the time.
+# 1086 RCs had P<=Pval_threshold at Pval_threshold=0.005
+# RCmap has 4160 rows
+# There are 666 terminal nodes. Traversing RC tree from all terminal nodes.
+# Found 2264 RC sequences for 2561716 pairs. Checking joinability of pairs.
+# 146.14s
+# saveRDS(dm,'data/primates/dendromap_P5e-3_threshold')
 
 Lineages <- dm$Lineages
 Lineages[,n:=.N,by=Lineage]
@@ -95,8 +100,77 @@ Lineages[,n:=.N,by=Lineage]
 Lineages[n==max(n),min(row.node)] ### this is the descendant node of our biggest lineage
 setkey(Lineages,n,Lineage)
 
-ll=4
+ll=2
 row.descendants <- row.tree$tip.label[phangorn::Descendants(row.tree,Lineages[Lineage==ll,min(row.node)],'tips')[[1]]]
 col.descendants <- col.tree$tip.label[phangorn::Descendants(col.tree,Lineages[Lineage==ll,min(col.node)],'tips')[[1]]]
 taxonomy[sequence %in% row.descendants]
-X[SampleID %in% col.descendants,c('Species_tree','Diet','Phyl_Group')]
+# X[SampleID %in% col.descendants,c('Species_tree','Diet','Phyl_Group')]
+
+
+taxonomic.summary <- function(dm,taxonomy,lineage=1){
+  row.descendants <- row.tree$tip.label[phangorn::Descendants(row.tree,dm$Lineages[Lineage==lineage,min(row.node)],'tips')[[1]]]
+  ix <- as.character(unlist(taxonomy[,1])) %in% row.descendants
+  tx <- taxonomy[which(ix),2] %>% unlist
+  tx2 <- taxonomy[which(!ix),2] %>% unlist
+  pp <- phylofactor::uniqueTaxa(tx,tx2)
+  return(unique(pp))
+}
+
+plot(dm)
+
+plot_lineage <- function(dm,lineage=1,y=NULL,trans='none',row.tip.label=FALSE,col.tip.label=TRUE,...){
+  if (is.null(y)){
+    if (is.null(dm$Data)){
+      ## plot just the lineages on row and column trees, with tip labels
+    } else {
+      ## use dm$Data for a plot of subset containing lineage
+      spp <- phangorn::Descendants(dm$row.tree,dm$Lineages[Lineage==lineage,min(row.node)],'tips')[[1]]
+      spp <- dm$row.tree$tip.label[spp]
+      
+      xx <- dm$Data[spp,]
+      if (trans!='none'){
+        if (trans=='log'){
+          min.val <- tryCatch(min(xx[xx!=0]),error=function(e) e)
+          if (min.val<0 | 'error' %in% class(min.val)){
+            stop(paste('error produced a finding min(dm$Data[dm$Data!=0]): min.val=',e))
+          } else {
+            xx[xx==0] <- 0.65*min.val
+            xx <- log(xx)
+          }
+        } else {
+          stop('trans must be either "none" or "log"')
+        }
+      }
+    }
+  } else {
+    spp <- phangorn::Descendants(dm$row.tree,dm$Lineages[Lineage==lineage,min(row.node)],'tips')[[1]]
+    spp <- dm$row.tree$tip.label[spp]
+    xx <- y[spp,]
+  }
+  if (exists('xx')){
+    dd <- dm[setdiff(names(dm),'Data')]
+    class(dd) <- 'dendromap'
+    dd$Data <- xx
+    dd$Lineages <- dd$Lineages[Lineage==lineage]
+    groups <- lapply(dd$Lineages$row.node,FUN=function(x,tr) tr$tip.label[phangorn::Descendants(tr,x,'tips')[[1]]],tr=dd$row.tree)
+    dd$row.tree <- ape::drop.tip(dd$row.tree,setdiff(dd$row.tree$tip.label,spp))
+    ## since we trimmed the row tree, we need to go back and replace the row.nodes
+    ## to match the mrca's
+    
+    dd$Lineages$row.node <- sapply(groups,FUN=function(x,tr) ape::getMRCA(tr,x),tr=dd$row.tree)
+    
+    
+    col.root <- dd$Lineages[,min(col.node)]
+    col.tips <- phangorn::Descendants(dd$col.tree,col.root,'tips')[[1]]
+    
+    dd$Data <- dd$Data[,col.tips]
+    plot(dd,...)
+  }
+}
+
+
+plot_lineage(dm,1,trans='log',col.tr.left=0.48,col.tr.width=0.49)
+
+plot_lineage(dm,2,trans='log',col.tr.left=0.48,col.tr.width=0.49)
+
+taxonomic.summary(dm,taxonomy)

@@ -14,12 +14,12 @@
 #' @param nreps input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}
 #' @examples
 #' library(dendromap)
-#' set.seed(1)
-#' m=1000
-#' n=10
-#' row.tree <- rtree(m)
+#' set.seed(3)
+#' m=1e3
+#' n=30
+#' row.tree <- rtree(m) %>% phytools::force.ultrametric()
 #' col.tree <- rtree(n)
-#' S <- treeSim(5,row.tree,col.tree,col.node=n+1) 
+#' S <- treeSim(5,row.tree,col.tree,row.depth.min=2,row.depth.max=3,col.node=n+1,fix.col.node=T) 
 #' eta <- S$W %*% (10*sign(S$D)) %*% t(S$V)
 #' X <- eta+matrix(rnorm(m*n),nrow=m)
 #' clrinv <- function(x) exp(x)/sum(exp(x))
@@ -27,7 +27,7 @@
 #' N <- apply(X,2,clrinv) %>% apply(2,rmlt)
 #' rownames(N) <- row.tree$tip.label
 #' colnames(N) <- col.tree$tip.label
-#' dm <- dendromap(N,row.tree,col.tree,Pval_threshold=0.005)
+#' dm <- dendromap(N,row.tree,col.tree,Pval_threshold=0.05)
 #' ## can use multiple cores for parallelization. Will speed-up large datasets.
 #' ## big graphs have to be handled with an alternative max_clique algorithm: max_clique_SA
 #' ## dm2 <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)
@@ -41,8 +41,8 @@
 #' 
 #' S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 #' dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-#' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### 50% of the real rc's were ID'd
-#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)     ### at a 64% true positive rate
+#' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### Probability of a true rc being ID'd
+#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)     ### Probability of ID'd rc being true positive
 
 dendromap <- function(X,row.tree,col.tree,ncores=NULL,
                       Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL,
@@ -114,7 +114,7 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,
     output_table <- rc_table[rc_index %in% Lineages[[winner]]]
     output_table[,Lineage:=i]
     output <- rbind(output,output_table)
-    Lineages <- filter_winner(winner,Lineages,rc_table,row.nodemap)
+    Lineages <- filter_winner(winner,Lineages,row.tree,rc_table,row.nodemap)
   }
   if (!is.null(cl)){
     parallel::stopCluster(cl)

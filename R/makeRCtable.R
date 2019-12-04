@@ -30,7 +30,8 @@ makeRCtable <- function(N,row.tree,col.tree,W=NULL,V=NULL,n_sim=NULL){
   null_cdf <-  ecdf(y)
   rc_table[,P:=1-null_cdf(log(stat^2))]
   if (any(rc_table$P==0)){
-    warning('Some P-values were 0. Will estimate tail probabilities assuming log(stat^2)~rnorm(mu,sd). You may want to consider manually increasing n_sim for more accurate null distribution')
+    nn=sum(rc_table$P==0)
+    base::cat(paste('\n',nn,' P-values were 0. Will estimate tail probabilities assuming log(stat^2)~rnorm(mu,sd). You may want to consider manually increasing n_sim for more accurate null distribution',sep=''))
     y <- y[y>-20]
     mu <- mean(y)
     sig <- sd(y)

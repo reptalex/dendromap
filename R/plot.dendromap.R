@@ -32,6 +32,12 @@ plot.dendromap <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   if (is.null(x$Lineages$orientation)){
     x$Lineages[,orientation:=sign(stat)]
   }
+  if (any(is.na(x$row.tree$edge.length))){
+    x$row.tree$edge.length[is.na(x$row.tree$edge.length)] <- 0
+  }
+  if (any(is.na(x$col.tree$edge.length))){
+    x$col.tree$edge.length[is.na(x$col.tree$edge.length)] <- 0
+  }
   vcols <- color.fcn.node(length(unique(x$Lineages$col.node)))
   nodecols <- data.table('node'=sort(unique(x$Lineages$col.node),decreasing = F),
                          'color'=vcols)
@@ -46,7 +52,7 @@ plot.dendromap <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   if (is.null(y)){
     if (is.null(x$Data)){
       if (is.null(x$W) | is.null(x$V) | is.null(x$D)){
-        y <- base::matrix(0,nrow=ape::ntip(x$row.tree),ncol=ape::ntip(col.tree))
+        y <- base::matrix(0,nrow=ape::Ntip(x$row.tree),ncol=ape::Ntip(col.tree))
       } else {
         y <- x$W %*% x$D %*% t(x$V)
       }
