@@ -2,9 +2,10 @@
 #' @export
 #' @param x dendromap class object from \code{\link{treeSim}} or \code{\link{dendromap}}
 #' @param y optional data matrix. Must have labelled rows containing all tips in \code{x$row.tree} and likewise for \code{x$col.tree}
+#' @param orient.nodes logical - whether/not to rotate all nodes to consistent orientation
 #' @param color.fcn.clade color function for clade highlights in \code{\link{ggtree}}
 #' @param color.fcn.node color function for node circles
-#' @param  heatmap.offset offset put into \code{\link{gheatmap}}. Defualt is 0
+#' @param heatmap.offset offset put into \code{\link{gheatmap}}. Defualt is 0
 #' @param col.tr.left Left side boundary of column tree. Default is 0.5
 #' @param col.tr.width Width of column tree. Default is 0.45
 #' @param col.tr.bottom Bottom of column tree. Deafult is 0.75
@@ -22,7 +23,9 @@
 #' plot(S,col.tr.left = 0.47,
 #'      col.tr.width = 0.505,
 #'      col.tr.bottom = 0.74)
-plot.dendromap <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
+plot.dendromap <- function(x,y=NULL,
+                           orient.nodes=TRUE,
+                           color.fcn.clade=viridis::viridis,
                          color.fcn.node=viridis::viridis,
                          heatmap.offset=0,
                          col.tr.left=0.5,
@@ -55,6 +58,7 @@ plot.dendromap <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
         y <- base::matrix(0,nrow=ape::Ntip(x$row.tree),ncol=ape::Ntip(col.tree))
       } else {
         y <- x$W %*% x$D %*% t(x$V)
+        y[y==0] <- NA
       }
     } else {
       y <- x$Data
@@ -64,9 +68,11 @@ plot.dendromap <- function(x,y=NULL,color.fcn.clade=viridis::viridis,
   gg <- ggtree::ggtree(x$row.tree,layout='rectangular',branch.length = 'none')
   
   ##flip all the nodes with orientation=-1
-  nds <- x$Lineages[orientation==-1,row.node]
-  for (nd in nds){
-    gg <- ggtree::rotate(gg,nd)
+  if (orient.nodes){
+    nds <- x$Lineages[orientation==-1,row.node]
+    for (nd in nds){
+      gg <- ggtree::rotate(gg,nd)
+    }
   }
   
   ## add clade hilights for basal nodes
