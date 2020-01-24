@@ -11,7 +11,7 @@ find_lineages <- function(RCmap,rc_table,
                           Col_Descendants,
                           cl,nreps){
   nds <- unique(RCmap[terminal==TRUE,descendant])
-  base::cat('\nThere are',length(nds),'terminal nodes. Traversing RC tree from all terminal nodes.')
+  # base::cat('\nThere are',length(nds),'terminal nodes. Traversing RC tree from all terminal nodes.')
   
   seq_score <- function(seq,scores.=scores) sum(scores[as.character(seq)])
   seq_novelty_score <- function(seq,ref,scores.=scores) sum(scores[as.character(setdiff(seq,ref))])

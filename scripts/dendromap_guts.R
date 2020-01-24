@@ -91,11 +91,27 @@ RC_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim)
 #     }
 #   } 
 # }
+rootpath <- function(node,tree){
+  N=length(tree$tip.label)
+  nds <- node
+  i=1
+  while(!(N+1) %in% nds){
+    ix=tree$edge[,2]==nds[i]
+    if (!any(ix)){
+      stop(paste('Could not find find descendant node',nds[i],'in tree$edge'))
+    } else {
+      nds <- c(nds,tree$edge[ix,1])
+      i=i+1
+    }
+  }
+  return(nds)
+}
 
-findLineageTable <- function(Pval_threshold,rc_table,row.nodemap,col.nodemap,cl,nreps){
-  if (nrow(rc_table)>1){
-    row.nodes <- unique(rc_table$row.node)
-    col.nodes <- unique(rc_table$col.node)
+
+findLineageTable <- function(Pval_threshold,rc_tbl,row.nodemap,col.nodemap,cl,nreps){
+  if (nrow(rc_tbl)>1){
+    row.nodes <- unique(rc_tbl$row.node)
+    col.nodes <- unique(rc_tbl$col.node)
     Row_Descendants <- lapply(row.nodes,getIndexSets,row.nodemap) %>%
       lapply(FUN=function(x,a) lapply(x,intersect,a),a=row.nodes)
     Col_Descendants <- lapply(col.nodes,getIndexSets,col.nodemap) %>%
@@ -103,16 +119,17 @@ findLineageTable <- function(Pval_threshold,rc_table,row.nodemap,col.nodemap,cl,
     
     names(Row_Descendants) <- row.nodes
     names(Col_Descendants) <- col.nodes
-    RCmap <- tryCatch(makeRCMap(rc_table,Row_Descendants,Col_Descendants),error=function(e) NULL)
+    RCmap <- tryCatch(makeRCMap(rc_tbl,Row_Descendants,Col_Descendants),error=function(e) NULL)
     if (is.null(RCmap) | all(RCmap$terminal)){
-      return(rc_table)
+      rc_tbl[,Lineage:=1:.N]
+      return(rc_tbl)
     } else {
-      base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
-      Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl,nreps)
-      compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
+      # base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
+      Lineages <- find_lineages(RCmap,rc_tbl,Row_Descendants,Col_Descendants,cl,nreps)
+      compute_score <- function(lineage,rc_tbl.=rc_tbl) rc_tbl[rc_index %in% lineage,-sum(log(P))]
       
-      base::cat(paste('\nRC-RC Tree traversal found',length(Lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
-      base::cat(paste('\nFiltering RC sequences into lineages'))
+      # base::cat(paste('\nRC-RC Tree traversal found',length(Lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
+      # base::cat(paste('\nFiltering RC sequences into lineages'))
       
       i=0
       output <- NULL
@@ -122,15 +139,16 @@ findLineageTable <- function(Pval_threshold,rc_table,row.nodemap,col.nodemap,cl,
         scores <- sapply(Lineages,compute_score)
         winner <- which.max(scores)
         
-        output_table <- rc_table[rc_index %in% Lineages[[winner]]]
+        output_table <- rc_tbl[rc_index %in% Lineages[[winner]]]
         output_table[,Lineage:=i]
         output <- rbind(output,output_table)
-        Lineages <- filter_winner(winner,Lineages,row.tree,rc_table,row.nodemap)
+        Lineages <- filter_winner(winner,Lineages,row.tree,rc_tbl,row.nodemap)
       }
       return(output)
     }
   } else {
-    return(rc_table)
+    rc_tbl$Lineage <- 1
+    return(rc_tbl)
   }
 }
 
@@ -171,9 +189,33 @@ if (length(Pset)>nP){
 }
 Fstats <- numeric(length(Pset))
 for (k in 1:length(Pset)){
-  Pval_threshold <- Pset[k]
-  rc_table <- RC_table[P<=Pval_threshold]
-  lineage_table <- findLineageTable(Pval_threshold,rc_table,row.nodemap,col.nodemap,cl,nreps)
+  if (k==1){
+    rc_table <- RC_table[P<=Pset[k]]
+    lineage_table <- findLineageTable(Pset[k],rc_table,row.nodemap,col.nodemap,cl,nreps)
+  } else {
+    ## we only have to recompute lineages from rc_table if they are either descendants/ancestors/same-row.nodes
+    ## of row.nodes in rc_table, OR if they are descendants of an ancestor of a new node (sister nodes).
+    # We'll use rc_table of new row.nodes - rc_2 - to search for overlaps
+    rc_2 <- RC_table[P>Pset[k-1] & P<=Pset[k]] 
+    descendants <- lapply(rc_2$row.node,getIndexSets,row.nodemap) %>% unlist %>% unique
+    ancestors <- sapply(rc_2$row.node,rootpath,row.tree) %>% unlist %>% c %>% unique
+    ancestors_from_prev <- rc_table[row.node %in% ancestors,row.node]
+    if (length(ancestors_from_prev)>0){
+      cousins <- lapply(ancestors_from_prev,getIndexSets,row.nodemap) %>% unlist %>% unique
+    } else {
+      cousins <- NULL
+    }
+    affected_nds <- unique(c(ancestors,descendants,cousins))
+    unaffected_lineages <- lineage_table[!row.node %in% affected_nds]
+    rc_2 <- rbind(rc_2,rc_table[row.node %in% affected_nds])
+    rc_2 <- rc_2[!duplicated(rc_2)]
+    new_lineages <- findLineageTable(Pval_threshold,rc_2,row.nodemap,col.nodemap,cl,nreps)
+    if (nrow(unaffected_lineages)>0){
+      new_lineages$Lineage <- new_lineages$Lineage+max(unaffected_lineages$Lineage)
+    }
+    lineage_table <- rbind(unaffected_lineages,new_lineages)
+    rc_table <- RC_table[P<=Pset[k]]
+  }
   Fstats[k] <- getFstat(X,lineage_table,W,V)
 }
 plot(Pset,Fstats,type='l')
@@ -185,8 +227,8 @@ OptimalP <- Pset[k]
 output <- findLineageTable(OptimalP,RC_table[P<=OptimalP],row.nodemap,col.nodemap,cl,nreps)
 
 
-dk=3
-dum=findLineageTable(Pset[k+dk],RC_table[P<=Pset[k+dk]],row.nodemap,col.nodemap,cl,nreps)
+# dk=3
+# dum=findLineageTable(Pset[k+dk],RC_table[P<=Pset[k+dk]],row.nodemap,col.nodemap,cl,nreps)
 # get winner --------------------------------------------------------------
 
 
