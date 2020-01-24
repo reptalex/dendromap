@@ -112,7 +112,7 @@ ggplot(rc,aes(P,fill=label))+geom_density(alpha=0.6)
 # dendromap ---------------------------------------------------------------
 
 
-x <- dendromap(N,row.tree,col.tree,Pval_threshold = 0.1)
+x <- dendromap(N,row.tree,col.tree)
 
 
 y <- S$W %*% S$D %*% t(S$V)
@@ -120,4 +120,7 @@ y[y==0] <- NA
 amplifier=3
 plot.dendromap(S,ilogit(amplifier*y),orient.nodes=F)
 dev.new()
-plot.dendromap(x,orient.nodes=F)
+yy <- x$Data
+yy[is.na(y)] <- NA
+plot.dendromap(x,yy,orient.nodes=F)
+plot.dendromap(S,ilogit(amplifier*y),orient.nodes=T)

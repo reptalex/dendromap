@@ -9,8 +9,6 @@
 #' @param W optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param V optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param n_sim optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}
-#' @param big_graph_definition integer size of graph (number of vertices) above which \code{\link{max_clique_SA}} will be used to find weighted max clique
-#' @param time.limit runtime limit for \code{\link{max_clique_SA}}
 #' @param nreps input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}
 #' @examples
 #' library(dendromap)
@@ -45,8 +43,7 @@
 #' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)     ### Probability of ID'd rc being true positive
 
 dendromap <- function(X,row.tree,col.tree,ncores=NULL,
-                      Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL,
-                      big_graph_definition=100,time.limit=1,nreps=20){
+                      Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL,nreps=20){
   
   base::cat(paste('Checking Data and tree compatibility'))
   ### Align dataset to trees
@@ -97,7 +94,7 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,
     stop('Did not find any row-tree/column-tree node sequences using the input P-value threshold and n_sim')
   }
   base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
-  Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl,big_graph_definition,time.limit,nreps)
+  Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl,nreps)
   compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
   base::cat(paste('\nRC-RC Tree traversal found',length(Lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))

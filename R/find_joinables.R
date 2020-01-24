@@ -29,27 +29,31 @@ find_joinables <- function(Seqs,rc_table,Row_Descendants,Col_Descendants,cl=NULL
   rm('A')
   tbl <- tbl[ix]
   rm('ix')
-  branch_points <- mapply(FUN=getBranchPoint,seq1=tbl$seq1,seq2=tbl$seq2,
-                          MoreArgs = list('Seqs'=Seqs)) %>% t %>% as.data.table()
-  branch_points[,ix:=1:.N]
-  colnames(branch_points)[1] <- 'rc_index'
-  setkey(branch_points,rc_index)
-  branch_points <- rctbl[,c('rc_index','row.node','col.node')][branch_points]
-  names(branch_points)[1:4] <- c('ix1','rn1','cn1','rc_index')
-  setkey(branch_points,rc_index)
-  branch_points <- rctbl[,c('rc_index','row.node','col.node')][branch_points]
-  names(branch_points)[1:3] <- c('ix2','rn2','cn2')
-  if (is.null(cl)){
-    joinability <- apply(as.matrix(branch_points[,c('rn1','rn2','cn1','cn2')]),1,
-                         FUN=function(x,r,c) check_joinable(x[1],x[2],x[3],x[4],r,c),
-                         r=Row_Descendants,c=Col_Descendants)
+  if (nrow(tbl)>0){
+    branch_points <- mapply(FUN=getBranchPoint,seq1=tbl$seq1,seq2=tbl$seq2,
+                            MoreArgs = list('Seqs'=Seqs)) %>% t %>% as.data.table()
+    branch_points[,ix:=1:.N]
+    colnames(branch_points)[1] <- 'rc_index'
+    setkey(branch_points,rc_index)
+    branch_points <- rctbl[,c('rc_index','row.node','col.node')][branch_points]
+    names(branch_points)[1:4] <- c('ix1','rn1','cn1','rc_index')
+    setkey(branch_points,rc_index)
+    branch_points <- rctbl[,c('rc_index','row.node','col.node')][branch_points]
+    names(branch_points)[1:3] <- c('ix2','rn2','cn2')
+    if (is.null(cl)){
+      joinability <- apply(as.matrix(branch_points[,c('rn1','rn2','cn1','cn2')]),1,
+                           FUN=function(x,r,c) check_joinable(x[1],x[2],x[3],x[4],r,c),
+                           r=Row_Descendants,c=Col_Descendants)
+    } else {
+      joinability <- parallel::parApply(cl=cl,X=as.matrix(branch_points[,c('rn1','rn2','cn1','cn2')]),1,
+                                         FUN=function(x,r,c) check_joinable(x[1],x[2],x[3],x[4],r,c),
+                                         r=Row_Descendants,c=Col_Descendants)
+    }
+    joinability <- joinability[order(branch_points$ix)]
+    tbl[,joinability:=joinability]
+    setkey(rc_table,row.node,col.node)
   } else {
-    joinability <- parallel::parApply(cl=cl,X=as.matrix(branch_points[,c('rn1','rn2','cn1','cn2')]),1,
-                                       FUN=function(x,r,c) check_joinable(x[1],x[2],x[3],x[4],r,c),
-                                       r=Row_Descendants,c=Col_Descendants)
+    tbl <- NULL
   }
-  joinability <- joinability[order(branch_points$ix)]
-  tbl[,joinability:=joinability]
-  setkey(rc_table,row.node,col.node)
   return(tbl)
 }
