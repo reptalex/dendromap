@@ -4,10 +4,14 @@
 \alias{filter_winner}
 \title{filter winner from lineages found}
 \usage{
-filter_winner(winner, Lineages, rc_table, row.nodemap)
+filter_winner(winner, Lineages, row.tree, rc_table, row.nodemap)
 }
 \arguments{
 \item{winner}{index - element of Lineages maximizing score}
+
+\item{Lineages}{list of lineages to filter}
+
+\item{row.tree}{phylo object}
 
 \item{rc_table}{\code{\link{makeRCtable}}}
 

@@ -4,7 +4,7 @@
 \alias{plot.dendromap}
 \title{Plot dendromap object}
 \usage{
-\method{plot}{dendromap}(x, y = NULL,
+\method{plot}{dendromap}(x, y = NULL, orient.nodes = TRUE,
   color.fcn.clade = viridis::viridis,
   color.fcn.node = viridis::viridis, heatmap.offset = 0,
   col.tr.left = 0.5, col.tr.width = 0.45, col.tr.bottom = 0.75)
@@ -13,6 +13,8 @@
 \item{x}{dendromap class object from \code{\link{treeSim}} or \code{\link{dendromap}}}
 
 \item{y}{optional data matrix. Must have labelled rows containing all tips in \code{x$row.tree} and likewise for \code{x$col.tree}}
+
+\item{orient.nodes}{logical - whether/not to rotate all nodes to consistent orientation}
 
 \item{color.fcn.clade}{color function for clade highlights in \code{\link{ggtree}}}
 

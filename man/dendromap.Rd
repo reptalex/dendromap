@@ -5,8 +5,7 @@
 \title{dendromap - find cophylogenetic patterns in a dataset}
 \usage{
 dendromap(X, row.tree, col.tree, ncores = NULL, Pval_threshold = 0.01,
-  W = NULL, V = NULL, n_sim = NULL, big_graph_definition = 100,
-  time.limit = 1, nreps = 10)
+  W = NULL, V = NULL, n_sim = NULL, nreps = 20)
 }
 \arguments{
 \item{X}{matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}}
@@ -25,10 +24,6 @@ dendromap(X, row.tree, col.tree, ncores = NULL, Pval_threshold = 0.01,
 
 \item{n_sim}{optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}}
 
-\item{big_graph_definition}{integer size of graph (number of vertices) above which \code{\link{max_clique_SA}} will be used to find weighted max clique}
-
-\item{time.limit}{runtime limit for \code{\link{max_clique_SA}}}
-
 \item{nreps}{input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}}
 }
 \description{
@@ -36,22 +31,23 @@ dendromap - find cophylogenetic patterns in a dataset
 }
 \examples{
 library(dendromap)
-set.seed(1)
-m=1000
-n=10
-row.tree <- rtree(m)
+set.seed(3)
+m=1e3
+n=30
+row.tree <- rtree(m) \%>\% phytools::force.ultrametric()
 col.tree <- rtree(n)
-S <- treeSim(5,row.tree,col.tree,col.node=n+1) 
-eta <- S$W \%*\% (10*S$D) \%*\% t(S$V)
+S <- treeSim(5,row.tree,col.tree,row.depth.min=2,row.depth.max=3,col.node=n+1,fix.col.node=T) 
+eta <- S$W \%*\% (10*sign(S$D)) \%*\% t(S$V)
 X <- eta+matrix(rnorm(m*n),nrow=m)
 clrinv <- function(x) exp(x)/sum(exp(x))
 rmlt <- function(p,lambda=5e3) rmultinom(1,rpois(1,lambda),prob = p)
 N <- apply(X,2,clrinv) \%>\% apply(2,rmlt)
 rownames(N) <- row.tree$tip.label
 colnames(N) <- col.tree$tip.label
-dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V)
-## can use multiple cores for parallelization. Will speed-up large datasets
-# dm <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)  
+dm <- dendromap(N,row.tree,col.tree,Pval_threshold=0.05)
+## can use multiple cores for parallelization. Will speed-up large datasets.
+## big graphs have to be handled with an alternative max_clique algorithm: max_clique_SA
+## dm2 <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)
 #Since they've already been computed, inputting the matrices W, V saves time.
 
 dendromap:::print.dendromap(S)
@@ -62,6 +58,6 @@ dendromap:::plot.dendromap(dm)
 
 S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
 dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-sum(S$Lineages$rc \%in\% dm$Lineages$rc)/nrow(S$Lineages)      ### 78.6\% of the real rc's were ID'd
-sum(dm$Lineages$rc \%in\% S$Lineages$rc)/nrow(dm$Lineages)     ### at a 100\% true positive rate
+sum(S$Lineages$rc \%in\% dm$Lineages$rc)/nrow(S$Lineages)      ### Probability of a true rc being ID'd
+sum(dm$Lineages$rc \%in\% S$Lineages$rc)/nrow(dm$Lineages)     ### Probability of ID'd rc being true positive
 }

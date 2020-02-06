@@ -1,3 +1,15 @@
+#' find path from node to root
+#' @export
+#' @param node node of \code{tree}
+#' @param tree phylo class object
+#' @examples 
+#' library(dendromap)
+#' set.seed(1)
+#' tree <- rtree(20)
+#' rp=rootpath(33,tree)
+#' 
+#' plot(tree)
+#' nodelabels(rp,rp)
 rootpath <- function(node,tree){
   N=length(tree$tip.label)
   nds <- node

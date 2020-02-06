@@ -9,7 +9,7 @@ find_joinables <- function(Seqs,rc_table,Row_Descendants,Col_Descendants,cl=NULL
   n <- length(Seqs)
   tbl <- data.table('seq1'=rep(1:(n-1),times=(n-1):1),key='seq1')
   tbl[,seq2:=(seq1+1):n,by=seq1]
-  base::cat(paste('\nFound',length(Seqs),'RC sequences for',nrow(tbl),'pairs. Checking joinability of pairs.'))
+  # base::cat(paste('\nFound',length(Seqs),'RC sequences for',nrow(tbl),'pairs. Checking joinability of pairs.'))
   getBranchPoint <- function(seq1,seq2,Seqs){
     intrsct <- intersect(Seqs[[seq1]],Seqs[[seq2]])
     branch_points1 <- !Seqs[[seq1]]%in%intrsct

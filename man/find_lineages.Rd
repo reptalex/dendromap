@@ -4,8 +4,7 @@
 \alias{find_lineages}
 \title{find lineages with RCmap}
 \usage{
-find_lineages(RCmap, rc_table, Row_Descendants, Col_Descendants,
-  cl = NULL, big_graph_definition = 20, time.limit = 1, nreps = 10)
+find_lineages(RCmap, rc_table, Row_Descendants, Col_Descendants, cl)
 }
 \arguments{
 \item{RCmap}{see \code{\link{makeRCmap}}}
@@ -17,12 +16,6 @@ find_lineages(RCmap, rc_table, Row_Descendants, Col_Descendants,
 \item{Col_Descendants}{named \code{getIndexSets} of all col.nodes}
 
 \item{cl}{cluster with library \code{dendromap} loaded on each worker}
-
-\item{big_graph_definition}{integer size of graph (number of vertices) above which \code{\link{max_clique_SA}} will be used to find weighted max clique}
-
-\item{time.limit}{runtime limit for \code{\link{max_clique_SA}}}
-
-\item{nreps}{input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}}
 }
 \description{
 find lineages with RCmap

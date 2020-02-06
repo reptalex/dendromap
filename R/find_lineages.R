@@ -5,11 +5,10 @@
 #' @param Row_Descendants named \code{getIndexSets} of all row.nodes
 #' @param Col_Descendants named \code{getIndexSets} of all col.nodes
 #' @param cl cluster with library \code{dendromap} loaded on each worker
-#' @param nreps input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}
 find_lineages <- function(RCmap,rc_table,
                           Row_Descendants,
                           Col_Descendants,
-                          cl,nreps){
+                          cl){
   nds <- unique(RCmap[terminal==TRUE,descendant])
   # base::cat('\nThere are',length(nds),'terminal nodes. Traversing RC tree from all terminal nodes.')
   
