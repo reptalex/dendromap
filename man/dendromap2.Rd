@@ -5,7 +5,8 @@
 \title{dendromap - find cophylogenetic patterns in a dataset}
 \usage{
 dendromap2(X, row.tree, col.tree, ncores = NULL, max_Pval = 0.01,
-  nP = 100, W = NULL, V = NULL, n_sim = NULL)
+  nP = 100, W = NULL, V = NULL, n_sim = NULL,
+  estimate_runtime = FALSE, discard_contingency_zeros = FALSE)
 }
 \arguments{
 \item{X}{matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}}
@@ -25,6 +26,10 @@ dendromap2(X, row.tree, col.tree, ncores = NULL, max_Pval = 0.01,
 \item{V}{optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.}
 
 \item{n_sim}{optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}}
+
+\item{estimate_runtime}{logical - do you want to estimate the runtime for the second half of the algorithm (scanning F-statistics across P-value thresholds)?}
+
+\item{discard_contingency_zeros}{logical - do you want to discard incomparable rc node pairs?}
 }
 \description{
 dendromap - find cophylogenetic patterns in a dataset

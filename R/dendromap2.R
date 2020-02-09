@@ -10,6 +10,8 @@
 #' @param W optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param V optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
 #' @param n_sim optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}
+#' @param estimate_runtime logical - do you want to estimate the runtime for the second half of the algorithm (scanning F-statistics across P-value thresholds)?
+#' @param discard_contingency_zeros logical - do you want to discard incomparable rc node pairs?
 #' @examples
 #' library(dendromap)
 #' set.seed(3)
@@ -44,7 +46,7 @@
 
 dendromap2 <- function(X,row.tree,col.tree,ncores=NULL,
                       max_Pval=0.01,nP=100,W=NULL,V=NULL,n_sim=NULL,
-                      estimate_runtime=FALSE){
+                      estimate_runtime=FALSE,discard_contingency_zeros=FALSE){
   
   base::cat(paste('Checking Data and tree compatibility'))
   ### Align dataset to trees
@@ -71,11 +73,11 @@ dendromap2 <- function(X,row.tree,col.tree,ncores=NULL,
     cl <- NULL
   }
   if (is.null(W)){
-    base::cat(paste('Making treeBasis for row.tree'))
+    base::cat(paste('\nMaking treeBasis for row.tree'))
     W <- treeBasis(row.tree)
   }
   if (is.null(V)){
-    base::cat(paste('Making treeBasis for col.tree'))
+    base::cat(paste('\nMaking treeBasis for col.tree'))
     V <- treeBasis(col.tree)
   }
   
@@ -84,7 +86,7 @@ dendromap2 <- function(X,row.tree,col.tree,ncores=NULL,
   col.nodemap <- dendromap:::makeNodeMap(col.tree)
   
   base::cat(paste('\nMaking RC table with',n_sim,'null simulations'))
-  RC_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim)
+  RC_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim,cl,discard_contingency_zeros)
   Pset <- unique(RC_table[P<=max_Pval,P]) %>% sort(decreasing=F)
   if (length(Pset)>nP){
     Pset <- seq(min(Pset),max_Pval,length.out=nP)

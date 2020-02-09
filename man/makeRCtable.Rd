@@ -4,7 +4,8 @@
 \alias{makeRCtable}
 \title{make table of significant row-column node pairs}
 \usage{
-makeRCtable(N, row.tree, col.tree, W = NULL, V = NULL, n_sim = NULL)
+makeRCtable(N, row.tree, col.tree, W = NULL, V = NULL, n_sim = NULL,
+  cl = NULL, discard_contingency_zeros = FALSE)
 }
 \arguments{
 \item{N}{matrix whose row names are in \code{row.tree$tip.label} and column names are in \code{col.tree$tip.label}}
@@ -18,6 +19,10 @@ makeRCtable(N, row.tree, col.tree, W = NULL, V = NULL, n_sim = NULL)
 \item{V}{\code(treeBasis(col.tree))}
 
 \item{n_sim}{number of simulatd null datasets (used to compuate approximate P values for r-c node pairs)}
+
+\item{cl}{cluster with \code{library(dendromap)} loaded}
+
+\item{discard_contingency_zeros}{logical. If TRUE, will discard all rc pairs for which either (a) a sister clade is always zero across sites or (b) both clades are zero within a site.}
 }
 \description{
 make table of significant row-column node pairs
