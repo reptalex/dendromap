@@ -2,7 +2,6 @@
 #' @export
 #' @param x dendromap class object from \code{\link{treeSim}} or \code{\link{dendromap}}
 #' @param y optional data matrix. Must have labelled rows containing all tips in \code{x$row.tree} and likewise for \code{x$col.tree}
-#' @param orient.nodes logical - whether/not to rotate all nodes to consistent orientation
 #' @param color.fcn.clade color function for clade highlights in \code{\link{ggtree}}
 #' @param color.fcn.node color function for node circles
 #' @param heatmap.offset offset put into \code{\link{gheatmap}}. Defualt is 0
@@ -24,29 +23,34 @@
 #'      col.tr.width = 0.505,
 #'      col.tr.bottom = 0.74)
 plot.dendromap <- function(x,y=NULL,
-                           orient.nodes=TRUE,
                            color.fcn.clade=viridis::viridis,
                          color.fcn.node=viridis::viridis,
                          heatmap.offset=0,
                          col.tr.left=0.5,
                          col.tr.width=0.45,
-                         col.tr.bottom=0.75){
+                         col.tr.bottom=0.75,
+                         col.point.size=3,
+                         row.point.size=3,
+                         highlight_basal=TRUE){
   
-  if (is.null(x$Lineages$orientation)){
-    x$Lineages[,orientation:=sign(stat)]
-  }
+  # if (is.null(x$Lineages$orientation)){
+  #   x$Lineages[,orientation:=sign(stat)]
+  # }
   if (any(is.na(x$row.tree$edge.length))){
     x$row.tree$edge.length[is.na(x$row.tree$edge.length)] <- 0
   }
   if (any(is.na(x$col.tree$edge.length))){
     x$col.tree$edge.length[is.na(x$col.tree$edge.length)] <- 0
   }
+  
+  
+  
   vcols <- color.fcn.node(length(unique(x$Lineages$col.node)))
   nodecols <- data.table('node'=sort(unique(x$Lineages$col.node),decreasing = F),
                          'color'=vcols)
   gtr <- ggtree::ggtree(x$col.tree,branch.length = 'none')+
     ggtree::geom_point2(ggplot2::aes(subset=node %in% nodecols$node),
-                        color=nodecols$color,cex=3)+
+                        color=nodecols$color,cex=col.point.size)+
     ggplot2::coord_flip()+ggplot2::scale_x_reverse()+
     ggplot2::scale_y_reverse()
   
@@ -67,30 +71,26 @@ plot.dendromap <- function(x,y=NULL,
   
   gg <- ggtree::ggtree(x$row.tree,layout='rectangular',branch.length = 'none')
   
-  ##flip all the nodes with orientation=-1
-  if (orient.nodes){
-    nds <- x$Lineages[orientation==-1,row.node]
-    for (nd in nds){
-      gg <- ggtree::rotate(gg,nd)
-    }
-  }
-  
   ## add clade hilights for basal nodes
-  cols <- color.fcn.clade(max(x$Lineages$Lineage))
-  ii=0
-  start.nodes <- x$Lineages[,list(nd=min(row.node)),by=Lineage]$nd
-  for (nd in start.nodes){
-    ii=ii+1
-    gg <- gg+ggtree::geom_hilight(nd,fill=cols[ii])
+  if (highlight_basal){
+    cols <- color.fcn.clade(length(unique(x$Lineages$lineage_id)))
+    ii=0
+    start.nodes <- x$Lineages[,list(nd=min(row.node)),by=lineage_id]$nd
+    for (nd in start.nodes){
+      ii=ii+1
+      gg <- gg+ggtree::geom_hilight(nd,fill=cols[ii])
+    }
   }
   
   Path <- x$Lineages
   setkey(Path,row.node)
   gg.cols <- nodecols[match(x$Lineages$col.node,node),]$color
-  gg <- gg+ggtree::geom_point2(ggplot2::aes(subset=node %in% Path$row.node),
-                               color=gg.cols,cex=3)
   
-  gg <- ggtree::gheatmap(gg,as.matrix(y),color=NA,colnames = FALSE,offset=heatmap.offset)+
+  gg <- gg+ggtree::geom_point2(ggplot2::aes(subset=node %in% Path$row.node),
+                               color=gg.cols,cex=row.point.size)
+  
+  gg <- ggtree::gheatmap(gg,as.matrix(y[,column.order]),color=NA,high='steelblue',
+                         low='grey',colnames = FALSE,offset=heatmap.offset)+
     ggtree::theme(legend.position = 'none')+cowplot::theme_nothing()
   
   output <- cowplot::ggdraw() + 

@@ -4,10 +4,12 @@
 #' @param rc_table see \code{\link{makeRCtable}}
 #' @param Row_Descendants named \code{getIndexSets} of all row.nodes
 #' @param Col_Descendants named \code{getIndexSets} of all col.nodes
+#' @param method either 'node' or 'edge
 #' @param cl cluster with library \code{dendromap} loaded on each worker
 find_lineages <- function(RCmap,rc_table,
                           Row_Descendants,
                           Col_Descendants,
+                          method='node',
                           cl){
   nds <- unique(RCmap[terminal==TRUE,descendant])
   # base::cat('\nThere are',length(nds),'terminal nodes. Traversing RC tree from all terminal nodes.')
@@ -65,7 +67,7 @@ find_lineages <- function(RCmap,rc_table,
   
   if (length(Seqs)>1){
     #### JOINABILITY
-    tbl <- dendromap:::find_joinables(Seqs,rc_table,Row_Descendants,Col_Descendants,cl)
+    tbl <- dendromap:::find_joinables(Seqs,rc_table,Row_Descendants,Col_Descendants,method,cl)
     if (!is.null(tbl)){
       #### JOINABILITY GRAPH
       seq.indexes <- unique(unlist(tbl[,c('seq1','seq2')]))

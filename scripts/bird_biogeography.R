@@ -1,6 +1,7 @@
 devtools::install_github('reptalex/dendromap')
 # devtools::install_github('reptalex/phylodt')
 library(dendromap)
+library(ggtree)
 
 
 load('data/birds/bird_conts.Rdata')
@@ -149,5 +150,29 @@ for (i in 1:max(dm$Lineages$Lineage)){
 
 
 for (i in 1:max(dm_comp$Lineages$Lineage)){
-  summarize_lineage(i,dm_comp,row.nodemap,col.nodemap)
+  nn=summarize_lineage(i,dm_comp,row.nodemap,col.nodemap)
 }
+
+
+nn=summarize_lineage(20,dm,row.nodemap,col.nodemap)
+
+nn=summarize_lineage(1,dm_comp,row.nodemap,col.nodemap)
+### one error in both dm and dm_comp was a tinamou/ostrich-emu-cassowary AF-SA/Australia split. 
+### It correctly ID'd tinamou's as S-American but incorrectly identified ostriches as Australian
+
+rheas <- phangorn::Descendants(row.tree,dm$Lineages[Lineage==20,row.node],'tips')[[1]] %>% row.tree$tip.label[.]
+tr <- drop.tip(row.tree,setdiff(row.tree$tip.label,rheas))
+
+ggtree(tr)+
+  geom_tiplab()+
+  geom_hilight(55)+
+  geom_hilight(100,fill=viridis::viridis(2)[1])+xlim(0,100)
+
+
+
+
+rheas <- phangorn::Descendants(row.tree,dm$Lineages[Lineage==20,row.node]-1,'tips')[[1]] %>% row.tree$tip.label[.]
+tr <- drop.tip(row.tree,setdiff(row.tree$tip.label,rheas))
+
+ggtree(tr)+
+  geom_tiplab()+xlim(0,100)
