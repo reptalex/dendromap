@@ -11,6 +11,7 @@ scan_Fstats(
   rowDescendants,
   rowEdgeTips,
   colEdgeTips,
+  rowtree,
   cl = NULL
 )
 }
@@ -28,6 +29,8 @@ scan_Fstats(
 \item{colEdgeTips}{\code{\link{edge_tips}} for col.tree}
 
 \item{cl}{cluster initialized internally with \code{\link{dendromap}}}
+
+\item{row.tree}{phylo class object}
 }
 \description{
 Scan P-value thresholds, computing global F-statistic for lineages obtained at each step

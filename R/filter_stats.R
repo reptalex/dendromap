@@ -5,8 +5,9 @@
 #' @param rc_table see \code{\link{make_rc_table}}
 #' @param rc_relations see \code{\link{get_rc_relations}}
 #' @param rowDescendants List of descendants made from \code{edge_registry}. Element \code{i} contains all edges descendant from edge \code{i} in the row tree
+#' @param row.tree phylo class object
 #' @examples
-filter_stats <- function(x,Lineages,rc_table,rc_relations,rowDescendants){
+filter_stats <- function(x,Lineages,rc_table,rc_relations,rowDescendants,row.tree){
   x <- x[order(F_stat,decreasing = T)]
   
   i=1

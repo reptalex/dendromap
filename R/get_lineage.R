@@ -9,7 +9,7 @@
 #' @param colDescendants List of descendants made from \code{edge_registry}. Element \code{j} contains all edges descendant from edge \code{j} in the column tree
 #' @examples
 get_lineage <- function(basal_ix,p_thresh=1,rc_relations.=rc_relations,rc_table.=rc_table,row.tree.=row.tree,
-                        rowDescendants.=rowDescendants,colDescendants.=colDescendants){
+                        rowDescendants.=rowDescendants,colDescendants.=colDescendants,...){
   rct <- rc_table[P<=p_thresh]
   rcm <- rc_relations[max_P<=p_thresh]
   basal_row_edge <- rct[rc_index==basal_ix,row.edge]

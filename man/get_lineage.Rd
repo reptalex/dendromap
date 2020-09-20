@@ -11,7 +11,8 @@ get_lineage(
   rc_table. = rc_table,
   row.tree. = row.tree,
   rowDescendants. = rowDescendants,
-  colDescendants. = colDescendants
+  colDescendants. = colDescendants,
+  ...
 )
 }
 \arguments{

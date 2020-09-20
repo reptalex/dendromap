@@ -4,7 +4,7 @@
 \alias{filter_stats}
 \title{Plot dendromap object}
 \usage{
-filter_stats(x, Lineages, rc_table, rc_relations, rowDescendants)
+filter_stats(x, Lineages, rc_table, rc_relations, rowDescendants, row.tree)
 }
 \arguments{
 \item{x}{output from \code{\link{lineage_stats}}}
@@ -16,6 +16,8 @@ filter_stats(x, Lineages, rc_table, rc_relations, rowDescendants)
 \item{rc_relations}{see \code{\link{get_rc_relations}}}
 
 \item{rowDescendants}{List of descendants made from \code{edge_registry}. Element \code{i} contains all edges descendant from edge \code{i} in the row tree}
+
+\item{row.tree}{phylo class object}
 }
 \description{
 Plot dendromap object

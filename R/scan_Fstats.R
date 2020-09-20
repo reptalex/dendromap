@@ -6,14 +6,13 @@
 #' @param rowDescendants List of descendants made from \code{edge_registry}. Element \code{i} contains all edges descendant from edge \code{i} in the row tree
 #' @param rowEdgeTips \code{\link{edge_tips}} for row.tree
 #' @param colEdgeTips \code{\link{edge_tips}} for col.tree
+#' @param row.tree phylo class object
 #' @param cl cluster initialized internally with \code{\link{dendromap}} 
 #' @examples
-scan_Fstats <- function(pvals,rc_table,rc_relations,rowDescendants,rowEdgeTips,colEdgeTips,cl=NULL){
+scan_Fstats <- function(pvals,rc_table,rc_relations,rowDescendants,rowEdgeTips,colEdgeTips,rowtree,cl=NULL){
   ix_prev <- NULL
   Fstats <- rep(NA,length(pvals))
-  if (!is.null(cl)){
-    ### check cluster?
-  }
+
   start_time <- Sys.time()
   for (i in 1:length(pvals)){
     p_thresh=pvals[i]
@@ -28,9 +27,11 @@ scan_Fstats <- function(pvals,rc_table,rc_relations,rowDescendants,rowEdgeTips,c
                            setdiff(unique(ancestor),unique(descendant))]
       desc_count <- rcm[ancestor %in% ix_thresh & descendant %in% ix_thresh,
                         list(n=.N),by=ancestor]
-      basal_ixs_with_descendants <- intersect(basal_indexes,desc_count[n>1,ancestor])
+      basal_ixs_with_descendants <- intersect(basal_indexes,desc_count[n>=1,ancestor])
       if (is.null(cl)){
-        Lineages <- lapply(basal_ixs_with_descendants,get_lineage,p_thresh=p_thresh) %>% 
+        Lineages <- lapply(basal_ixs_with_descendants,get_lineage,p_thresh=p_thresh,
+                           rc_relations=rc_relations,rc_table.=rc_table,row.tree=row.tree,
+                           rowDescendants=rowDescendants,colDescendants=colDescendants) %>% 
                       rbindlist
       } else {
         Lineages <- parallel::parLapply(cl,basal_ixs_with_descendants,get_lineage,p_thresh=p_thresh) %>% 
@@ -82,9 +83,11 @@ scan_Fstats <- function(pvals,rc_table,rc_relations,rowDescendants,rowEdgeTips,c
                       setdiff(unique(ancestor),unique(descendant))]
       desc_count <- rcm[ancestor %in% row_path_ix & descendant %in% ix_thresh,
                         list(n=.N),by=ancestor]
-      basal_ixs_with_descendants <- intersect(basal_ix,desc_count[n>1,ancestor])
+      basal_ixs_with_descendants <- intersect(basal_ix,desc_count[n>=1,ancestor])
       if (is.null(cl)){
-        Lineages <- lapply(basal_ixs_with_descendants,get_lineage,p_thresh=p_thresh) %>% 
+        Lineages <- lapply(basal_ixs_with_descendants,get_lineage,p_thresh=p_thresh,
+                           rc_relations=rc_relations,rc_table=rc_table,row.tree=row.tree,
+                           rowDescendants=rowDescendants,colDescendants=colDescendants) %>% 
                       rbindlist
       } else {
         Lineages <- parallel::parLapply(cl,basal_ixs_with_descendants,get_lineage,p_thresh=p_thresh) %>% 
@@ -96,11 +99,10 @@ scan_Fstats <- function(pvals,rc_table,rc_relations,rowDescendants,rowEdgeTips,c
     }
     
     
-    #### need to parallelize lineage_stats
     if (nrow(Lineages)>0){
       stats <- lineage_stats(Lineages,X,colEdgeTips,rowEdgeTips,cl=cl)
       stats <- stats[order(F_stat,decreasing = T)]
-      stats <-  filter_stats(stats,Lineages,rct,rcm,rowDescendants)
+      stats <-  filter_stats(stats,Lineages,rct,rcm,rowDescendants,row.tree)
       Lineages <- Lineages[lineage_id %in% stats$lineage_id]
     }
     if (nrow(Lineages)>0){
@@ -110,7 +112,7 @@ scan_Fstats <- function(pvals,rc_table,rc_relations,rowDescendants,rowEdgeTips,c
     ix_prev <- ix_thresh  ## we only have to recompute new_ix that affect our Lineages table
     tm2 <- Sys.time()
     time.elapsed <- signif(difftime(tm2,start_time,units = 'mins'),3)
-    GUI.notification <- paste('\r',i,'P-values out of',length(pvals),
+    GUI.notification <- paste('\r',i,'P thresholds out of',length(pvals),
                               'scanned in',time.elapsed,'minutes.    ')
     GUI.notification <- paste(GUI.notification,'Estimated time of completion for this step:',
                               as.character(start_time+difftime(tm2,start_time)*length(pvals)/i),
