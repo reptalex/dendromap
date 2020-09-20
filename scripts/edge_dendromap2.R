@@ -3,75 +3,79 @@ gc()
 
 
 library(phylofactor)
-library(dendromap)
+# library(dendromap)
 library(parallel)
 load('data/birds/bird_dendromap_workspace')
+source('R/edge_dendromap_fcns.R')
 m <- nrow(X)
 n <- ncol(X)
 
 
 
 # edge rc_table -----------------------------------------------------------
-max_Pval=0.0001
-col_shuffle_only=TRUE
-W <- getPhyloGroups(row.tree) %>% sapply(ilrvec,n=nrow(X))
-V <- getPhyloGroups(col.tree) %>% sapply(ilrvec,n=ncol(X))
+# max_Pval=0.0001
+# col_shuffle_only=TRUE
+# W <- getPhyloGroups(row.tree) %>% sapply(ilrvec,n=nrow(X))
+# V <- getPhyloGroups(col.tree) %>% sapply(ilrvec,n=ncol(X))
+# 
+# # Cinv <- ape::vcv.phylo(row.tree) %>% chol %>% chol2inv
+# # Cinv <- chol2inv(chol(Crow))
+# # Xcor <- Cinv %*% X
+# # U <- t(W) %*% Xcor %*% V
+# 
+# U <- t(W) %*% X %*% V
+# if (col_shuffle_only){
+#   Unull <- t(W) %*% X[,sample(n)] %*% V
+# } else {
+#   Unull <- t(W) %*% X[sample(m),sample(n)] %*% V
+# }
+# 
+# cdf <- ecdf(c(Unull))
+# 
+# 
+# ix=which(abs(U)>0) %>% arrayInd(.dim = c(nrow(U),ncol(U))) %>% as.data.table
+# names(ix) <- c('row.edge','col.edge')
+# ix$stat <- U[abs(U)>0]
+# setkey(ix,row.edge,col.edge,stat)
+# 
+# ix[,rank:=rank(-abs(stat))]
+# ix[,P:=1-cdf(stat)]
+# 
+# ### need to modify basal edges
+# # row.basal.edges <- which(row.tree$edge[,1]==(ape::Ntip(row.tree)+1))
+# # col.basal.edges <- which(col.tree$edge[,1]==(ape::Ntip(col.tree)+1))
+# 
+# ## allow pos/neg values of the first, and discard the second
+# 
+# # ix[row.edge==row.basal.edges[1] | col.edge==col.basal.edges[1],stat:=abs(stat)]
+# # ix <- ix[row.edge != row.basal.edges[2] & col.edge != col.basal.edges[2]]
+# 
+# ix <- ix[stat>0]
+# 
+# 
+# setkey(ix,stat)
+# 
+# 
+# rc_table <- ix
+# 
+# y <- log(c(Unull[Unull>0]))
+# if (any(rc_table$P==0)){
+#   nn=sum(rc_table$P==0)
+#   base::cat(paste('\n',nn,' P-values were 0. Will estimate tail probabilities assuming log(stat^2)~rnorm(mu,sd)',sep=''))
+#   y <- y[y>-20]
+#   mu <- mean(y)
+#   sig <- sd(y)
+#   min.P <- rc_table[P>0,min(P)]
+#   stat.min <- max(log(rc_table[P>0][P==min(P),stat]))
+#   estimate_tail <- function(y1,mu,sig,ymin,pmin) (1-pnorm(y1,mu,sig))/(1-pnorm(ymin,mu,sig))*pmin
+#   rc_table[P==0,P:=estimate_tail(log(stat),mu,sig,stat.min,min.P)]
+# }
+# 
+# rc_table <- rc_table[P<=max_Pval]
+# rc_table[,rc_index:=1:.N]
 
-# Cinv <- ape::vcv.phylo(row.tree) %>% chol %>% chol2inv
-# Cinv <- chol2inv(chol(Crow))
-# Xcor <- Cinv %*% X
-# U <- t(W) %*% Xcor %*% V
 
-U <- t(W) %*% X %*% V
-if (col_shuffle_only){
-  Unull <- t(W) %*% X[,sample(n)] %*% V
-} else {
-  Unull <- t(W) %*% X[sample(m),sample(n)] %*% V
-}
-
-cdf <- ecdf(c(Unull))
-
-
-ix=which(abs(U)>0) %>% arrayInd(.dim = c(nrow(U),ncol(U))) %>% as.data.table
-names(ix) <- c('row.edge','col.edge')
-ix$stat <- U[abs(U)>0]
-setkey(ix,row.edge,col.edge,stat)
-
-ix[,rank:=rank(-abs(stat))]
-ix[,P:=1-cdf(stat)]
-
-### need to modify basal edges
-# row.basal.edges <- which(row.tree$edge[,1]==(ape::Ntip(row.tree)+1))
-# col.basal.edges <- which(col.tree$edge[,1]==(ape::Ntip(col.tree)+1))
-
-## allow pos/neg values of the first, and discard the second
-
-# ix[row.edge==row.basal.edges[1] | col.edge==col.basal.edges[1],stat:=abs(stat)]
-# ix <- ix[row.edge != row.basal.edges[2] & col.edge != col.basal.edges[2]]
-
-ix <- ix[stat>0]
-
-
-setkey(ix,stat)
-
-
-rc_table <- ix
-
-y <- log(c(Unull[Unull>0]))
-if (any(rc_table$P==0)){
-  nn=sum(rc_table$P==0)
-  base::cat(paste('\n',nn,' P-values were 0. Will estimate tail probabilities assuming log(stat^2)~rnorm(mu,sd)',sep=''))
-  y <- y[y>-20]
-  mu <- mean(y)
-  sig <- sd(y)
-  min.P <- rc_table[P>0,min(P)]
-  stat.min <- max(log(rc_table[P>0][P==min(P),stat]))
-  estimate_tail <- function(y1,mu,sig,ymin,pmin) (1-pnorm(y1,mu,sig))/(1-pnorm(ymin,mu,sig))*pmin
-  rc_table[P==0,P:=estimate_tail(log(stat),mu,sig,stat.min,min.P)]
-}
-
-rc_table <- rc_table[P<=max_Pval]
-rc_table[,rc_index:=1:.N]
+rc_table <- edge_rc_table(X,row.tree,col.tree,maxPval=max_Pval)
 
 # edgeMap for quick descendant calculation -------------------------------------------------------------------
 
@@ -178,26 +182,6 @@ rc_table[row.edge==1+94]  ## tinamous - south america
 focal_edge=1
 descendants <- rowEdgeMap[edge==focal_edge,setdiff(seq(edge,edge+n),edge)]
 rhea_table <- rc_table[row.edge %in% c(descendants,focal_edge)]
-
-
-
-
-
-
-
-## others
-i=2
-focal_edge <- as.numeric(names(row_edges)[i])
-
-gns <- row.tree$tip.label[phangorn::Descendants(row.tree,row.tree$edge[focal_edge,2],'tips')[[1]]] %>% genus_filter()
-gns
-
-
-
-# rc_filter <- function(rc_table,rowEdgeMap,colEdgeMap){
-#   
-# }
-                      
 
 
 # RC_map ------------------------------------------------------------------
@@ -326,12 +310,12 @@ basal_edges <- setdiff(ancs,desc)
 # desc <- unique(rhea_map$descendant)
 # basal_edges <- setdiff(ancs,desc)
 
-rhea_map <- edgeRCMap(rhea_table,Row_Descendants,Col_Descendants)
-rhea_nds <- unique(rhea_map[terminal==TRUE,descendant])
-rhea_sqs <- lapply(rhea_nds,rc_seqs,rhea_map) %>% unlist(recursive=FALSE) %>% unique
-
-
-rhea_joinables <- find_joinables(rhea_sqs,rhea_table,Row_Descendants,Col_Descendants)
+# rhea_map <- edgeRCMap(rhea_table,Row_Descendants,Col_Descendants)
+# rhea_nds <- unique(rhea_map[terminal==TRUE,descendant])
+# rhea_sqs <- lapply(rhea_nds,rc_seqs,rhea_map) %>% unlist(recursive=FALSE) %>% unique
+# 
+# 
+# rhea_joinables <- find_joinables(rhea_sqs,rhea_table,Row_Descendants,Col_Descendants)
 
 edge_ancestors <- function(edge,tree){
   rt=ape::Ntip(tree)+1
@@ -350,17 +334,24 @@ edge_ancestors <- function(edge,tree){
 }
 
 ######## option 1: greedyColTree
-incompatible_descendants <- function(rc_ix,rc_tbl,Row_Descendants,Col_Descendants,row.tree.=row.tree){
+incompatible_descendants <- function(rc_ix,rc_tbl,Row_Descendants,Col_Descendants,row.tree.=row.tree,col.tree.=col.tree){
   row.edg <- rc_tbl[rc_index==rc_ix,row.edge]
   col.edg <- rc_tbl[rc_index==rc_ix,col.edge]
   ### incompatible lineages will have either
-  ## the same col.edges in descendant row.edges
-  ## or ancestral edges
+  ## the same (or ancestral) col.edges in descendant row.edges
+  ## or ancestral row.edges
+  
+  ## in other words, row_ancs are excluded and only descendant col.edges are allowed in descednant row edges
   
   row_descs <- Row_Descendants[[row.edg]]
-  row_ancs <- edge_ancestors(row.edg,row.tree)
-  incompatibles <- rc_table[col.edge==col.edg & row.edge %in% c(row_descs,row_ancs),rc_index]
-  incompatibles <- c(incompatibles,rc_table[row.edge==row.edg,rc_index])
+  col_descs <- Col_Descendants[[col.edg]]
+  row_ancs <- c(edge_ancestors(row.edg,row.tree),row.edg)
+  incompatibles <- rc_tbl[row.edge %in% row_ancs,rc_index]
+  if (is.null(col_descs)){ ## No possible descendants
+    incompatibles <- c(incompatibles,rc_tbl[row.edge %in% row_descs,rc_index])
+  } else {
+    incompatibles <- c(incompatibles,rc_tbl[row.edge %in% row_descs & !col.edge %in% col_descs,rc_index])
+  }
   return(incompatibles)
 }
 
@@ -368,7 +359,7 @@ incompatible_descendants <- function(rc_ix,rc_tbl,Row_Descendants,Col_Descendant
 
 clean_sisters <- function(lineage,row.tree,rc_table){
   ### any sister row.edges with same col.edge will reclassify their mother as their col.edge
-  repeated_col_edges <- as.numeric(names(which(table(lineage$col.edge)>0)))
+  repeated_col_edges <- as.numeric(names(which(table(lineage$col.edge)>1)))
   if (length(repeated_col_edges)==0){
     return(lineage)
   } else {
@@ -396,18 +387,59 @@ clean_sisters <- function(lineage,row.tree,rc_table){
   }
 }
 
-greedyColTree <- function(rc_tbl,RCmap.=RCmap,rc_table.=rc_table,row.tree.=row.tree){
+filter_rc_tbl <- function(rc_tbl,Row_descendants.=RowDescendants){
+  ### Filtering ### 
+  ## We'd like to do this as few times as possible.
+  ## One option is to start with basal indexes of rc_table for the min P-value cutoff
+  ## and then use that filtered rc_table's basal-index shards for greedyColTree input
+  ## When adding more rc-indexes with higher P-values, 
+  ## we can simply check whether/not they, too, need to be excluded.
+  
+  ## RULES OF FILTERING:
+  ## remove col.edges with more significant values among descendants (implies signal lost with inclusion of sister taxa)
+  ### Implications:
+  ## addition of P-values with higher values will not upset a lower P-value's filtering. 
+  setkey(rc_tbl,row.edge,P)
+  row.edges <- unique(rc_tbl$row.edge)
+
+  for (ee in row.edges){
+    dum <- rc_table[row.edge==ee,c('col.edge','P','rc_index')]
+    if (nrow(dum)>0 & length(Row_Descendants[[ee]])>0){
+      descs_tbl <- rc_table[row.edge %in% Row_Descendants[[ee]] & col.edge %in% dum$col.edge]
+      descs <- descs_tbl[,list(Pmin=min(P)),by=col.edge]
+      setkey(dum,col.edge)
+      setkey(descs,col.edge) ## this may not contain all col.edges in dum
+      dd <- descs[dum]
+      removers <- dd[P>Pmin,rc_index]
+      rc_tbl <- rc_tbl[!rc_index %in% removers]
+    }
+  }
+  return(rc_tbl)
+}
+
+
+
+greedyColTree <- function(rc_tbl,RCmap.=RCmap,rc_table.=rc_table,row.tree.=row.tree,Row_Descendants.=Row_Descendants,filter=TRUE){
+  ### RULES:
+  ## 1) remove col.edges with more significant values among descendants (implies signal lost with inclusion of sister taxa)
+  ##     see function filter_rc_tbl
+  ## 2) pick most basal row.edge, choosing col.edge with lowest P-value  -- from filtering, this is guaranteed to be greater than that of any descendant for same col.edge
+  ## 3) remove row.edge and all descendant rc_indexes with same col.edge from rc_tbl
+  ## 4) repeat 2-3 until rc_tbl is empty
+  
+  if (filter){
+    rc_tbl <- filter_rc_tbl(rc_tbl)
+  }
+  
+ 
   lineage=NULL
   done=F
   n=0
   setkey(rc_tbl,row.edge,P)
   while(!done){
     n=n+1
-    lineage <- rbind(lineage,rc_tbl[1,])
+    lineage <- rbind(lineage,rc_tbl[1,]) ## next most basal row edge, and its lowest P-value col.edge
     ix <- rc_tbl$rc_index[1]
-    if (n==1){
-      setkey(rc_tbl,col.edge,P)
-    }
     incompatibles <- c(ix,incompatible_descendants(ix,rc_tbl,Row_Descendants,Col_Descendants))
     rc_tbl <- rc_tbl[!rc_index %in% incompatibles]
     if (nrow(rc_tbl)==0){
@@ -420,6 +452,8 @@ greedyColTree <- function(rc_tbl,RCmap.=RCmap,rc_table.=rc_table,row.tree.=row.t
 }
 
 lineage <- greedyColTree(rhea_table,RCmap,rc_table,row.tree)
+
+
 
 getLineage <- function(basal_ix,RCmap.=RCmap,rc_table.=rc_table,row.tree.=row.tree,
                        Row_Descendants.=Row_Descendants,Col_Descendants.=Col_Descendants){
@@ -435,6 +469,25 @@ getLineage <- function(basal_ix,RCmap.=RCmap,rc_table.=rc_table,row.tree.=row.tr
   return(lineage)
 }
 
+### NOTE: I can filter rc_table first - for every basal_ix, run filter_rc_table then rbindlist
+Simplify_rc_table <- function(rc_table,RCmap.=RCmap,
+                             Row_Descendants.=Row_Descendants,
+                             Col_Descendants.=Col_Descendants,
+                             cl=NULL){
+  ancs <- unique(RCmap$ancestor)
+  descs <- unique(RCmap$descendant)
+  basal_indexes <- setdiff(ancs,descs) ## ancestors w/o descendant
+  
+  ### We'll filter rc_table to: (1) only edges with ancestor/descendant relation
+  ### i.e. must be in RCmap
+  rc_table <- rc_table[rc_index %in% c(ancs,descs)]
+  setkey(rc_table,row.edge,P)
+  rc_table <- filter_rc_tbl(rc_table)
+  return(rc_table)
+}
+
+rc_table <- Simplify_rc_table(rc_table)
+RCmap <- edgeRCMap(rc_table,Row_Descendants,Col_Descendants)
 # choosing edges to input to greedyColTree -----------------------------------------
 
 # getBasalEdges <- function(rc_tbl,Row_Descendants){

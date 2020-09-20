@@ -1,124 +1,136 @@
-
-#' dendromap - find cophylogenetic patterns in a dataset
+#' Coarse-grain dataset, X, based on discovered lineage
 #' @export
-#' @param X matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}
-#' @param row.tree phylo class object. Polytomies will be ignored.
-#' @param col.tree phylo class object. Polytomies will be ignored.
-#' @param ncores If not NULL, then integer specifying number of cores to use for parallelizable steps
-#' @param Pval_threshold Threshold "significance" of a row-column node pair for consideration in lineages. If input, will override \code{fdr_threshold}
-#' @param W optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
-#' @param V optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.
-#' @param n_sim optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}
-#' @param nreps input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}
+#' @param X dataset input to \code{\link{dendromap}} from which lineages were made
+#' @param row.tree \code{phylo} class object
+#' @param col.tree \code{phylo} class object
+#' @param ncores integer number of cores for parallelization
+#' @param maxPval numeric, maximum P-value of \code{row.tree}-x-\code{col.tree} edge pairs to consider
+#' @param stepsize granularity of pvals initially input to \code{\link{scan_Fstats}}
 #' @examples
-#' library(dendromap)
-#' set.seed(3)
-#' m=1e3
-#' n=30
-#' row.tree <- rtree(m) %>% phytools::force.ultrametric()
-#' col.tree <- rtree(n)
-#' S <- treeSim(5,row.tree,col.tree,row.depth.min=2,row.depth.max=3,col.node=n+1,fix.col.node=T) 
-#' eta <- S$W %*% (10*sign(S$D)) %*% t(S$V)
-#' X <- eta+matrix(rnorm(m*n),nrow=m)
-#' clrinv <- function(x) exp(x)/sum(exp(x))
-#' rmlt <- function(p,lambda=5e3) rmultinom(1,rpois(1,lambda),prob = p)
-#' N <- apply(X,2,clrinv) %>% apply(2,rmlt)
-#' rownames(N) <- row.tree$tip.label
-#' colnames(N) <- col.tree$tip.label
-#' dm <- dendromap(N,row.tree,col.tree,Pval_threshold=0.05)
-#' ## can use multiple cores for parallelization. Will speed-up large datasets.
-#' ## big graphs have to be handled with an alternative max_clique algorithm: max_clique_SA
-#' ## dm2 <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)
-#' #Since they've already been computed, inputting the matrices W, V saves time.
-#' 
-#' dendromap:::print.dendromap(S)
-#' dendromap:::print.dendromap(dm)
-#' 
-#' dendromap:::plot.dendromap(S)
-#' dendromap:::plot.dendromap(dm)
-#' 
-#' S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-#' dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-#' sum(S$Lineages$rc %in% dm$Lineages$rc)/nrow(S$Lineages)      ### Probability of a true rc being ID'd
-#' sum(dm$Lineages$rc %in% S$Lineages$rc)/nrow(dm$Lineages)     ### Probability of ID'd rc being true positive
-
-dendromap <- function(X,row.tree,col.tree,ncores=NULL,
-                      Pval_threshold=0.01,W=NULL,V=NULL,n_sim=NULL,nreps=20){
+dendromap <- function(X,row.tree,col.tree,ncores=NULL,maxPval=0.001,stepsize=10){
   
-  base::cat(paste('Checking Data and tree compatibility'))
-  ### Align dataset to trees
-  if (!all(rownames(X) %in% row.tree$tip.label)){
-    stop('There are rownames(X) not in row.tree$tip.label')
-  } else {
-    if (!all(row.tree$tip.label %in% rownames(X))){
-      row.tree <- ape::drop.tip(row.tree,setdiff(rownames(X),row.tree$tip.label))
-    }
-    X <- X[row.tree$tip.label,]
-  }
-  if (!all(colnames(X) %in% col.tree$tip.label)){
-    stop('There are colnames(X) not in col.tree$tip.label')
-  } else {
-    if (!all(col.tree$tip.label %in% colnames(X))){
-      col.tree <- ape::drop.tip(col.tree,setdiff(colnames(X),col.tree$tip.label))
-    }
-    X <- X[,col.tree$tip.label]
-  }
+  # edgeMap, edge_tips for quick descendant calculations -------------------------------------------------------------------
+  base::cat('Prepping workspace for edge-based tree traversals')
+  rowEdgeMap <- edge_registry(row.tree)
+  colEdgeMap <- edge_registry(col.tree)
+  row.edges <- 1:Nedge(row.tree)
+  col.edges <- 1:Nedge(col.tree)
+  rowDescendants <- rowEdgeMap[,list(list(setdiff(seq(edge,edge+n),edge))),by=edge]$V1
+  colDescendants <- colEdgeMap[,list(list(setdiff(seq(edge,edge+n),edge))),by=edge]$V1
+  colEdgeTips <- edge_tips(col.tree)
+  rowEdgeTips <- edge_tips(row.tree)
+  
+  # edge rc_table -----------------------------------------------------------
+  base::cat('\nMaking rc_table')
+  rc_table <- make_rc_table(X,row.tree,col.tree,maxPval)
+  
+  
+  # RC_map ------------------------------------------------------------------
+  base::cat('\nMaking rc_relations')
+  rc_relations <- find_rc_relations(rc_table,rowDescendants,colDescendants)
+  
+  # simplify rc_table ------------------------------------------------------------------
+  base::cat('\nSimplifying rc_table')
+  rc_table <- simplify_rc_table(rc_table,rc_relations,rowDescendants,colDescendants)
+  rc_relations <- find_rc_relations(rc_table,rowDescendants,colDescendants)
+  
+  # Scanning F statistics ---------------------------------------------------
+  #### set up Pvalues for scanning
+  min_pval <-  cbind(rc_table[match(rc_relations$ancestor,rc_index),P],
+                     rc_table[match(rc_relations$descendant,rc_index),P]) %>% apply(1,max) %>% min
+  rc_relations$max_P <- cbind(rc_table[match(rc_relations$ancestor,rc_index),P],
+                              rc_table[match(rc_relations$descendant,rc_index),P]) %>% apply(1,max)
+  
+  # Prepare cluster -----------------------------------------
+  base::cat('\nPreparing cluster')
   if (!is.null(ncores)){
     cl <- parallel::makeCluster(ncores)
-    parallel::clusterEvalQ(cl,library(dendromap))
+    parallel::clusterExport(cl,varlist=c('X','row.tree','col.tree','rc_table','rc_relations',
+                                         'rowDescendants','colDescendants','rowEdgeTips','colEdgeTips',
+                                         'rowEdgeMap','colEdgeMap'),
+                            envir = environment())
+    parallel::clusterEvalQ(cl,{library(data.table)
+      library(magrittr)})
+    parallel::clusterEvalQ(cl,source('Old_R/edge_dendromap_fcns.R'))
   } else {
     cl <- NULL
   }
-
-  base::cat(paste('\nMaking Nodemaps'))
-  row.nodemap <- dendromap:::makeNodeMap(row.tree)
-  col.nodemap <- dendromap:::makeNodeMap(col.tree)
-
-  base::cat(paste('\nMaking RC table with',n_sim,'null simulations'))
-  rc_table <- makeRCtable(X,row.tree,col.tree,W,V,n_sim)
-  rc_table <- rc_table[P<max(P)]
-  rc_table <- rc_table[P<=Pval_threshold]
-  base::cat(paste('\n',nrow(rc_table),' RCs had P<=Pval_threshold at Pval_threshold=',Pval_threshold,sep=''))
   
-  row.nodes <- unique(rc_table$row.node)
-  col.nodes <- unique(rc_table$col.node)
-  Row_Descendants <- lapply(row.nodes,getIndexSets,row.nodemap) %>%
-    lapply(FUN=function(x,a) lapply(x,intersect,a),a=row.nodes)
-  Col_Descendants <- lapply(col.nodes,getIndexSets,col.nodemap) %>%
-    lapply(FUN=function(x,a) lapply(x,intersect,a),a=col.nodes)
+  pvals <- sort(unique(rc_relations$max_P),decreasing = F) ### need an additional trim
+  ps <- rc_table[,list(P=min(P),
+                       rc_index=rc_index[which.min(P)]),by=row.edge]
+  min_P <- rc_relations[ancestor %in% ps$rc_index,max_P] %>% min
+  pvals <- pvals[pvals>=min_P]
+  scanned_pvals <- pvals[seq(1,length(pvals),by=stepsize)]
+  base::cat(paste('Beginning coarse scan of',length(scanned_pvals),'P-value thresholds'))
   
-  names(Row_Descendants) <- row.nodes
-  names(Col_Descendants) <- col.nodes
-  RCmap <- tryCatch(makeRCMap(rc_table,Row_Descendants,Col_Descendants),error=function(e) NULL)
-  if (is.null(RCmap)){
-    stop('Did not find any row-tree/column-tree node sequences using the input P-value threshold and n_sim')
+  ### Scanning
+  Fscan <- tryCatch(scan_Fstats(scanned_pvals,rc_table,rc_relations,rowDescendants,
+                                rowEdgeTips,colEdgeTips,cl=cl),
+                    error=function(e) e)
+  if (!'data.table' %in% class(Fscan)){
+    if (!is.null(cl)){
+      parallel::stopCluster(cl)
+      rm('cl')
+      gc()
+    }
+    stop(Fscan)
   }
-  base::cat(paste('\nRCmap has',nrow(RCmap),'rows'))
-  Lineages <- find_lineages(RCmap,rc_table,Row_Descendants,Col_Descendants,cl,nreps)
-  compute_score <- function(lineage,rc_table.=rc_table) rc_table[rc_index %in% lineage,-sum(log(P))]
   
-  base::cat(paste('\nRC-RC Tree traversal found',length(Lineages),'sequences of RCs. \n If this number is large, joining sequences by finding cliques will take a long time.'))
-  base::cat(paste('\nFiltering RC sequences into lineages'))
   
-  i=0
-  output <- NULL
-  while (length(Lineages)>0){
-    i=i+1
-
-    scores <- sapply(Lineages,compute_score)
-    winner <- which.max(scores)
-    
-    output_table <- rc_table[rc_index %in% Lineages[[winner]]]
-    output_table[,Lineage:=i]
-    output <- rbind(output,output_table)
-    Lineages <- filter_winner(winner,Lineages,row.tree,rc_table,row.nodemap)
+  ### Refining - scan every pval around maximum
+  ix <- which(scanned_pvals==Fscan[Fstat==max(Fstat),P_thresh])
+  if (ix<=2){
+    refined_pvals <- pvals[pvals<=scanned_pvals[4]]
+  } else if (ix>=(length(scanned_pvals)-2)){
+    refined_pvals <- pvals[pvals>=scanned_pvals[length(scanned_pvals)-3]]
+  } else {
+    refined_pvals  <- pvals[pvals>=scanned_pvals[ix-2] & pvals<=scanned_pvals[ix+2]]
   }
+  base::cat(paste('Beginning refined scan of',length(refined_pvals),'P-value thresholds'))
+  
+  Fscan_refined <- tryCatch(scan_Fstats(refined_pvals,rc_table,rc_relations,rowDescendants,
+                                        rowEdgeTips,colEdgeTips,cl=cl),
+                            error=function(e) e)
+  if (!'data.table' %in% class(Fscan_refined)){
+    if (!is.null(cl)){
+      parallel::stopCluster(cl)
+      rm('cl')
+      gc()
+    }
+    stop(Fscan_refined)
+  }
+  Fscan <- rbind(Fscan,Fscan_refined)
+  Fscan <- Fscan[!duplicated(Fscan)]
+  
+  # Preparing Output ------------------------------------------------------
+  
+  Lineages <- Fscan[Fstat==max(Fstat),P_thresh] %>% 
+    get_lineages_and_stats(rc_table,rc_relations,rowDescendants,
+                           colEdgeTips,rowEdgeTips,cl)
+  
+  
   if (!is.null(cl)){
     parallel::stopCluster(cl)
     rm('cl')
     gc()
   }
-  output <- list('Lineages'=output,'Data'=X,'row.tree'=row.tree,'col.tree'=col.tree)
-  class(output) <- 'dendromap'
-  return(output)
+  
+  setkey(Lineages,row.edge)
+  edge2node <- function(edges,tree) tree$edge[edges,2]
+  Lineages[,row.node:=edge2node(row.edge,row.tree)]
+  Lineages[,col.node:=edge2node(col.edge,col.tree)]
+  Lineages <- Lineages[order(F_stat,decreasing = T)]
+  Lineages[,Lineage:=match(lineage_id,unique(lineage_id))]
+  object <- list('Lineages'=Lineages,
+                 'Data'=X,
+                 'row.tree'=row.tree,
+                 'col.tree'=col.tree,
+                 'colEdgeTips'=colEdgeTips,
+                 'rowEdgeTips'=rowEdgeTips,
+                 'rowDescendants'=rowDescendants,
+                 'colDescendants'=colDescendants,
+                 'F_scan'=Fscan)
+  class(object) <- 'dendromap'
+  return(object)
 }

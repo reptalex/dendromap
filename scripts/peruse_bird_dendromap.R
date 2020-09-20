@@ -16,28 +16,28 @@ spp_lineage <- function(lineage,continent_map.=continent_map,genera=TRUE){
   return(spp)
 }
 
+
+continent_map <- data.table('col.edge'=1:8,
+                            'continent'=c('Laurasia','Eurasia','NAmerica',
+                                          'Gondwana','Australia','SA/Africa','Africa','SouthAmerica'))
+
 # demo --------------------------------------------------------------------
 
 load('data/edendromap_birds_workspace')
+stats <- Lineages[,list(F_stat=unique(F_stat)),by=lineage_id][order(F_stat,decreasing=T)]
 stats  # Lineage F-statistics, sorted from highest to lowest
+rowEdgeTips <- edgeTips(row.tree)
 
-# i=55 gets the Rheas
-i=55
+
+i=1
+i=i+1
 lineage = Lineages[lineage_id==stats$lineage_id[i]]
-
-#    row.edge col.edge     stat rank            P rc_index lineage_id lineage_size
-# 1:    13270        6 2.419963 2294 4.473644e-06     7883       6689            2
-# 2:    13274        7 4.993270  398 6.057702e-07     9156       6689            2
+# lineage
+lid <- lineage$lineage_id[1]
+lid
+lineage_plot(dm.e,id=lid,
+             row.point.size = 7,highlight_basal=FALSE,
+             col.point.size=5,heatmap.offset = -1)
 
 spp <- spp_lineage(lineage)
 spp
-# $Gondwana
-# [1] "Nothura"      "Taoniscus"    "Nothoprocta"  "Rhynchotus"   "Eudromia"     "Tinamotis"    "Nothocercus" 
-# [8] "Crypturellus" "Tinamus"      "Struthio"     "Dromaius"     "Casuarius"    "Rhea"        
-# 
-# $Australia
-# [1] "Dromaius"  "Casuarius" "Rhea"     
-# 
-# $SouthAmerica
-# [1] "Nothura"      "Taoniscus"    "Nothoprocta"  "Rhynchotus"   "Eudromia"     "Tinamotis"    "Nothocercus" 
-# [8] "Crypturellus" "Tinamus"    

@@ -75,8 +75,7 @@ plot.dendromap <- function(x,y=NULL,
   if (highlight_basal){
     cols <- color.fcn.clade(length(unique(x$Lineages$lineage_id)))
     ii=0
-    n_rowtips <- x$row.tree$tip.label %>% length
-    start.nodes <- x$Lineages[row.node>n_rowtips,list(nd=min(row.node)),by=lineage_id]$nd
+    start.nodes <- x$Lineages[,list(nd=min(row.node)),by=lineage_id]$nd
     for (nd in start.nodes){
       ii=ii+1
       gg <- gg+ggtree::geom_hilight(nd,fill=cols[ii])

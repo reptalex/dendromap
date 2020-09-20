@@ -2,62 +2,23 @@
 % Please edit documentation in R/dendromap.R
 \name{dendromap}
 \alias{dendromap}
-\title{dendromap - find cophylogenetic patterns in a dataset}
+\title{Coarse-grain dataset, X, based on discovered lineage}
 \usage{
-dendromap(X, row.tree, col.tree, ncores = NULL, Pval_threshold = 0.01,
-  W = NULL, V = NULL, n_sim = NULL, nreps = 20)
+dendromap(X, row.tree, col.tree, ncores = NULL, maxPval = 0.001, stepsize = 10)
 }
 \arguments{
-\item{X}{matrix whose rownames are in \code{row.tree$tip.label} and colnames are in \code{col.tree$tip.label}}
+\item{X}{dataset input to \code{\link{dendromap}} from which lineages were made}
 
-\item{row.tree}{phylo class object. Polytomies will be ignored.}
+\item{row.tree}{\code{phylo} class object}
 
-\item{col.tree}{phylo class object. Polytomies will be ignored.}
+\item{col.tree}{\code{phylo} class object}
 
-\item{ncores}{If not NULL, then integer specifying number of cores to use for parallelizable steps}
+\item{ncores}{integer number of cores for parallelization}
 
-\item{Pval_threshold}{Threshold "significance" of a row-column node pair for consideration in lineages. If input, will override \code{fdr_threshold}}
+\item{maxPval}{numeric, maximum P-value of \code{row.tree}-x-\code{col.tree} edge pairs to consider}
 
-\item{W}{optional \code{treeBasis(row.tree)} - must have colnames in the format of e.g. "node_51" for node 51.}
-
-\item{V}{optional \code{treeBasis(col.tree)} - must have colnames in the format of e.g. "node_51" for node 51.}
-
-\item{n_sim}{optional number of null datasets to simulate (via row & column shuffling) in order to generate approximate P-values in \code{\link{makeRCtable}}}
-
-\item{nreps}{input replicate Metropolis-Hastings simulations to initialize \code{\link{max_clique_SA}}}
+\item{stepsize}{granularity of pvals initially input to \code{\link{scan_Fstats}}}
 }
 \description{
-dendromap - find cophylogenetic patterns in a dataset
-}
-\examples{
-library(dendromap)
-set.seed(3)
-m=1e3
-n=30
-row.tree <- rtree(m) \%>\% phytools::force.ultrametric()
-col.tree <- rtree(n)
-S <- treeSim(5,row.tree,col.tree,row.depth.min=2,row.depth.max=3,col.node=n+1,fix.col.node=T) 
-eta <- S$W \%*\% (10*sign(S$D)) \%*\% t(S$V)
-X <- eta+matrix(rnorm(m*n),nrow=m)
-clrinv <- function(x) exp(x)/sum(exp(x))
-rmlt <- function(p,lambda=5e3) rmultinom(1,rpois(1,lambda),prob = p)
-N <- apply(X,2,clrinv) \%>\% apply(2,rmlt)
-rownames(N) <- row.tree$tip.label
-colnames(N) <- col.tree$tip.label
-dm <- dendromap(N,row.tree,col.tree,Pval_threshold=0.05)
-## can use multiple cores for parallelization. Will speed-up large datasets.
-## big graphs have to be handled with an alternative max_clique algorithm: max_clique_SA
-## dm2 <- dendromap(N,row.tree,col.tree,W=S$W,V=S$V,ncores=2,Pval_threshold=0.2)
-#Since they've already been computed, inputting the matrices W, V saves time.
-
-dendromap:::print.dendromap(S)
-dendromap:::print.dendromap(dm)
-
-dendromap:::plot.dendromap(S)
-dendromap:::plot.dendromap(dm)
-
-S$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-dm$Lineages[,rc:=paste(row.node,col.node,sep='_')]
-sum(S$Lineages$rc \%in\% dm$Lineages$rc)/nrow(S$Lineages)      ### Probability of a true rc being ID'd
-sum(dm$Lineages$rc \%in\% S$Lineages$rc)/nrow(dm$Lineages)     ### Probability of ID'd rc being true positive
+Coarse-grain dataset, X, based on discovered lineage
 }
