@@ -7,7 +7,7 @@
 #' @param rowDescendants List of descendants made from \code{edge_registry}. Element \code{i} contains all edges descendant from edge \code{i} in the row tree
 #' @param colDescendants List of descendants made from \code{edge_registry}. Element \code{j} contains all edges descendant from edge \code{j} in the column tree
 #' @examples
-assemble_lineage <- function(rc_tbl,rc_relations.=rc_relations,rc_table.=rc_table,row.tree.=row.tree,
+assemble_lineage_par <- function(rc_tbl,rc_relations.=rc_relations,rc_table.=rc_table,row.tree.=row.tree,
                              rowDescendants.=rowDescendants,colDescendants.=colDescendants){
   ### RULES:
   ## 1) remove col.edges with more significant values among descendants (implies signal lost with inclusion of sister taxa)
@@ -24,7 +24,7 @@ assemble_lineage <- function(rc_tbl,rc_relations.=rc_relations,rc_table.=rc_tabl
     n=n+1
     lineage <- rbind(lineage,rc_tbl[1,]) ## next most basal row edge, and its lowest P-value col.edge
     ix <- rc_tbl$rc_index[1]
-    incompatibles <- c(ix,incompatible_descendants(ix,rc_tbl,rowDescendants,colDescendants,row.tree))
+    incompatibles <- c(ix,incompatible_descendants(ix,rc_tbl,rowDescendants,colDescendants))
     rc_tbl <- rc_tbl[!rc_index %in% incompatibles]
     if (nrow(rc_tbl)==0){
       done=TRUE

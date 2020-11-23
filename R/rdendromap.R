@@ -65,7 +65,7 @@ rdendromap <- function(m=NULL,n=NULL,row.tree=NULL,col.tree=NULL,lineage_sizes=N
     lineage[,lineage_id:=nn]
     Lineages <- rbind(Lineages,lineage)
     
-    remaining_row_edges <- setdiff(remaining_row_edges,rowDescendants[basal_row_edge])
+    remaining_row_edges <- setdiff(remaining_row_edges,rowDescendants[[basal_row_edge]])
     remaining_row_edges <- setdiff(remaining_row_edges,edge_ancestors(basal_row_edge,row.tree))
     if (length(remaining_row_edges)==0){
       break

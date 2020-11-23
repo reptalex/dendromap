@@ -9,7 +9,7 @@ filter_stats(x, Lineages, rc_table, rc_relations, rowDescendants, row.tree)
 \arguments{
 \item{x}{output from \code{\link{lineage_stats}}}
 
-\item{Lineages}{see \code{\link{lineages_and_stats}}}
+\item{Lineages}{see \code{\link{get_lineages_and_stats}}}
 
 \item{rc_table}{see \code{\link{make_rc_table}}}
 

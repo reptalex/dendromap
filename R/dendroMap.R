@@ -49,9 +49,7 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,maxPval=0.001,stepsize=10)
                                          'rowDescendants','colDescendants','rowEdgeTips','colEdgeTips',
                                          'rowEdgeMap','colEdgeMap'),
                             envir = environment())
-    parallel::clusterEvalQ(cl,{library(data.table)
-      library(magrittr)})
-    parallel::clusterEvalQ(cl,source('Old_R/edge_dendromap_fcns.R'))
+    parallel::clusterEvalQ(cl,{library(dendromap)})
   } else {
     cl <- NULL
   }
@@ -65,9 +63,18 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,maxPval=0.001,stepsize=10)
   base::cat(paste('Beginning coarse scan of',length(scanned_pvals),'P-value thresholds'))
   
   ### Scanning
-  Fscan <- scan_Fstats(scanned_pvals,rc_table,rc_relations,rowDescendants,
+  # Fscan <- do.call(scan_Fstats,args = list('pvals'=scanned_pvals,
+  #                                          'X'=X,
+  #                                          'rc_table'=rc_table,
+  #                                          'rc_relations'=rc_relations,
+  #                                          'rowDescendants'=rowDescendants,
+  #                                          'colDescendants'=colDescendants,
+  #                      'rowEdgeTips'=rowEdgeTips,'colEdgeTips'=colEdgeTips,
+  #                      'row.tree'=row.tree,
+  #                      'cl'=cl),envir = environment())
+  Fscan <- scan_Fstats(scanned_pvals,X,rc_table,rc_relations,rowDescendants,colDescendants,
                        rowEdgeTips,colEdgeTips,row.tree,cl=cl)
-  # Fscan <- tryCatch(scan_Fstats(scanned_pvals,rc_table,rc_relations,rowDescendants,
+  # Fscan <- tryCatch(scan_Fstats(scanned_pvals,X,rc_table,rc_relations,rowDescendants,
   #                               rowEdgeTips,colEdgeTips,row.tree,cl=cl),
   #                   error=function(e) e)
   if (!'data.table' %in% class(Fscan)){
@@ -81,7 +88,8 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,maxPval=0.001,stepsize=10)
   
   
   ### Refining - scan every pval around maximum
-  ix <- which(scanned_pvals==Fscan[Fstat==max(Fstat),P_thresh])
+  winning_pvals <- Fscan[Fstat==max(Fstat),P_thresh]
+  ix <- which(scanned_pvals==min(winning_pvals))
   if (ix<=2){
     refined_pvals <- pvals[pvals<=scanned_pvals[4]]
   } else if (ix>=(length(scanned_pvals)-2)){
@@ -91,9 +99,9 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,maxPval=0.001,stepsize=10)
   }
   base::cat(paste('Beginning refined scan of',length(refined_pvals),'P-value thresholds'))
 
-  Fscan_refined <- scan_Fstats(refined_pvals,rc_table,rc_relations,rowDescendants,
-                               rowEdgeTips,colEdgeTips,row.tree,cl=cl)
-  # Fscan_refined <- tryCatch(scan_Fstats(refined_pvals,rc_table,rc_relations,rowDescendants,
+  Fscan_refined <- scan_Fstats(refined_pvals,X,rc_table,rc_relations,rowDescendants,
+                               colDescendants,rowEdgeTips,colEdgeTips,row.tree,cl=cl)
+  # Fscan_refined <- tryCatch(scan_Fstats(refined_pvals,X,rc_table,rc_relations,rowDescendants,
   #                                       rowEdgeTips,colEdgeTips,row.tree,cl=cl),
   #                           error=function(e) e)
   if (!'data.table' %in% class(Fscan_refined)){
@@ -111,7 +119,7 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,maxPval=0.001,stepsize=10)
   
   Lineages <- Fscan[Fstat==max(Fstat),P_thresh] %>% 
     get_lineages_and_stats(rc_table,rc_relations,rowDescendants,
-                           colEdgeTips,rowEdgeTips,cl)
+                           colEdgeTips,rowEdgeTips,cl,X,row.tree)
   
   
   if (!is.null(cl)){
@@ -128,6 +136,7 @@ dendromap <- function(X,row.tree,col.tree,ncores=NULL,maxPval=0.001,stepsize=10)
   if (!is.null(Lineages$lineage_id)){
     Lineages[,Lineage:=match(lineage_id,unique(lineage_id))]
   }
+  setkey(Lineages,F_stat,col.edge)
   object <- list('Lineages'=Lineages,
                  'Data'=X,
                  'row.tree'=row.tree,

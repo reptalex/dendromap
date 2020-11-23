@@ -5,10 +5,8 @@
 #' @param rowDescendants List of descendants made from \code{edge_registry}. Element \code{i} contains all edges descendant from edge \code{i} in the row tree
 #' @param colDescendants List of descendants made from \code{edge_registry}. Element \code{j} contains all edges descendant from edge \code{j} in the column tree
 #' @param row.tree \code{phylo} class object
-#' @param col.tree \code{phylo} class object
 #' @examples
-incompatible_descendants <- function(rc_ix,rc_tbl,rowDescendants,colDescendants,
-                                     row.tree.=row.tree,col.tree.=col.tree){
+incompatible_descendants <- function(rc_ix,rc_tbl,rowDescendants,colDescendants,row.tree){
   row.edg <- rc_tbl[rc_index==rc_ix,row.edge]
   col.edg <- rc_tbl[rc_index==rc_ix,col.edge]
   ### incompatible lineages will have either

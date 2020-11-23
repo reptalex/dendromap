@@ -9,8 +9,8 @@
 make_rc_table <- function(X,row.tree,col.tree,maxPval=0.01){
   m <- nrow(X)
   n <- ncol(X)
-  W <- getPhyloGroups(row.tree) %>% sapply(ilrvec,n=nrow(X))
-  V <- getPhyloGroups(col.tree) %>% sapply(ilrvec,n=ncol(X))
+  W <- edge_contrasts(row.tree)
+  V <- edge_contrasts(col.tree)
   
   U <- t(W) %*% X %*% V
   Unull <- t(W) %*% X[sample(m),sample(n)] %*% V

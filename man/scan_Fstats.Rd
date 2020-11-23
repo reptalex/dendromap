@@ -6,17 +6,21 @@
 \usage{
 scan_Fstats(
   pvals,
+  X,
   rc_table,
   rc_relations,
   rowDescendants,
+  colDescendants,
   rowEdgeTips,
   colEdgeTips,
-  rowtree,
+  row.tree,
   cl = NULL
 )
 }
 \arguments{
 \item{pvals}{numeric vector containing values between 0 and 1, sorted from smallest to largest}
+
+\item{X}{dataset input to \code{\link{dendromap}}}
 
 \item{rc_table}{see \code{\link{make_rc_table}}}
 
@@ -24,13 +28,15 @@ scan_Fstats(
 
 \item{rowDescendants}{List of descendants made from \code{edge_registry}. Element \code{i} contains all edges descendant from edge \code{i} in the row tree}
 
+\item{colDescendants}{List of descendants made from \code{edge_registry}. Element \code{i} contains all edges descendant from edge \code{i} in the col tree}
+
 \item{rowEdgeTips}{\code{\link{edge_tips}} for row.tree}
 
 \item{colEdgeTips}{\code{\link{edge_tips}} for col.tree}
 
-\item{cl}{cluster initialized internally with \code{\link{dendromap}}}
-
 \item{row.tree}{phylo class object}
+
+\item{cl}{cluster initialized internally with \code{\link{dendromap}}}
 }
 \description{
 Scan P-value thresholds, computing global F-statistic for lineages obtained at each step

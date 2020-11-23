@@ -1,6 +1,6 @@
 #' Extract global F statistic for several Lineages
 #' @export
-#' @param Lineages see \code{\link{lineages_and_stats}}
+#' @param Lineages see \code{\link{get_lineages_and_stats}}
 #' @param X dataset input to \code{\link{dendromap}} from which lineages were made
 #' @param colEdgeTips \code{\link{edge_tips}} for col.tree
 #' @param rowEdgeTips \code{\link{edge_tips}} for row.tree

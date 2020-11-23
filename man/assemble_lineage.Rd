@@ -9,7 +9,8 @@ assemble_lineage(
   rc_relations. = rc_relations,
   rc_table. = rc_table,
   row.tree. = row.tree,
-  rowDescendants. = rowDescendants
+  rowDescendants. = rowDescendants,
+  colDescendants. = colDescendants
 )
 }
 \arguments{
